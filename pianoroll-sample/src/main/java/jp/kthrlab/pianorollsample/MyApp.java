@@ -4,6 +4,7 @@ import jp.crestmuse.cmx.processing.CMXController;
 import jp.kthrlab.pianoroll.Channel;
 import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
 import jp.kthrlab.pianoroll.processing_cmx.HorizontalPAppletCmxPianoRoll;
+import jp.kthrlab.pianorollsample.MidiReceiver;
 import jp.kthrlab.pianoroll.PDFToImage;
 import processing.core.PApplet;
 import processing.event.KeyEvent;
@@ -12,6 +13,10 @@ import processing.core.PImage;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import processing.awt.PSurfaceAWT;
+
+import javax.sound.midi.MidiDevice;
+import javax.sound.midi.MidiSystem;
+import javax.sound.midi.Transmitter;
 import javax.swing.*;
 import javax.xml.transform.TransformerException;
 import java.awt.*;
@@ -21,12 +26,14 @@ import java.util.List;
 
 public class MyApp extends HorizontalPAppletCmxPianoRoll {
 
+    private Transmitter midiTransmitter;
+
     CMXController cmx = CMXController.getInstance();
 
     PImage pdfImage;
     // PImage[] pdfImages;
 
-    IMusicData musicData;
+    IMusicData musicData;  
 
     @Override
     public void draw() {
@@ -58,6 +65,8 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
     public void setup() {
         super.setup();
 
+        initMidi();
+
         musicData = new MusicData(
                 // "kirakira2.mid",
                 "TchaikovskyPletnevMarch.mid",
@@ -69,6 +78,7 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
                 12);
 
         cmx.smfread(musicData.getScc());
+        //startMusic();
 
         List<Color> colors = new ArrayList<>(Arrays.asList(Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN));
         List<Channel> channels = new ArrayList<Channel>();
@@ -122,6 +132,46 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
         // }
     }
 
+    private void initMidi() {
+        try {
+            MidiDevice.Info[] infos = MidiSystem.getMidiDeviceInfo();
+            for (MidiDevice.Info info : infos) {
+                MidiDevice device = MidiSystem.getMidiDevice(info);
+                if (device.getMaxTransmitters() != 0) {
+                    device.open();
+                    midiTransmitter = device.getTransmitter();
+                    midiTransmitter.setReceiver(new MidiReceiver(this));
+                    println("接続されたMIDIデバイス: " + info.getName());
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // MIDIノート入力時に呼ばれる
+    public void onNoteInput(int pitch, int velocity) {
+        println("ノート入力: pitch=" + pitch + ", velocity=" + velocity);
+
+        if (isCorrectNote(pitch)) {
+            println("正しいノートです（続行）");
+            // 続行処理（必要に応じて）
+        } else {
+            println("間違ったノートです（停止）");
+            stopMusic();  // 演奏停止
+        }
+    }
+
+    public void onNoteOff(int pitch) {
+        // 必要があれば処理を追加
+    }
+
+    private boolean isCorrectNote(int pitch) {
+        // 仮実装：60(C4) のみ正解とする
+        return pitch == 60;
+    }
+
     private void hideDefaultTitleBar() {
         JFrame frame = (JFrame) ((processing.awt.PSurfaceAWT.SmoothCanvas) getSurface().getNative()).getFrame();
         frame.removeNotify();
@@ -164,12 +214,21 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
         PApplet.main(new String[] { MyApp.class.getName() });
     }
 
+    // @Override
+    // public void keyPressed() {
+    // super.keyPressed();
+    // switch (keyCode) {
+    // case ENTER -> startMusic();
+    // case BACKSPACE -> stopMusic();
+    // }
+    // }
+
     @Override
     public void keyPressed() {
-        super.keyPressed();
+        //super.keyPressed();
         switch (keyCode) {
-            case ENTER -> startMusic();
-            case BACKSPACE -> stopMusic();
+            case 'a' -> onNoteInput(60, 100);  // 'a'キーでC4のノート入力（正解）
+            case 's' -> onNoteInput(62, 100);  // 's'キーでD4のノート入力（不正解で停止）
         }
     }
 }
