@@ -32,6 +32,10 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
 
     PImage pdfImage;
     // PImage[] pdfImages;
+    PImage[] pdfImage;
+    int currentImageIndex = 0;
+    long lastSwitchTime = 0;
+    int switchIntervalMillis = 2000; // 2秒
 
     IMusicData musicData;  
 
@@ -45,6 +49,16 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
             int cropH = Math.min(height * 2 / 5, pdfImage.height);
             // image(img, dx, dy, dwidth, dheight, sx, sy, swidth, sheight)
             image(pdfImage, 0, 0, width, cropH, 0, 0, pdfImage.width, cropH);
+        if (pdfImage != null && pdfImage.length > 0) {
+            long now = millis();
+            if (now - lastSwitchTime > switchIntervalMillis) {
+                currentImageIndex = (currentImageIndex + 1) % pdfImage.length;
+                lastSwitchTime = now;
+            }
+
+            // 選択された画像のみを描画
+            float imgHeight = height / 2.0f;
+            image(pdfImage[currentImageIndex], 0, 0, width, imgHeight);
         } else {
             fill(0);
             text("PDF画像がありません", 10, 20);
@@ -144,7 +158,15 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
                     println("接続されたMIDIデバイス: " + info.getName());
                     break;
                 }
+            BufferedImage[] bufferedImages = PDFToImage.loadFirstPageSplitHorizontally("kirakira2-midi.pdf");
+            pdfImage = new PImage[bufferedImages.length];
+            for (int i = 0; i < bufferedImages.length; i++) {
+                BufferedImage img = bufferedImages[i];
+                pdfImage[i] = new PImage(img.getWidth(), img.getHeight(), ARGB);
+                img.getRGB(0, 0, img.getWidth(), img.getHeight(), pdfImage[i].pixels, 0,
+                        img.getWidth());
             }
+            System.out.println("PDF画像配列読み込み成功: " + pdfImage.length + "ページ");
         } catch (Exception e) {
             e.printStackTrace();
         }
