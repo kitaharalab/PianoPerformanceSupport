@@ -8,7 +8,6 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 
 import jp.kthrlab.pianoroll.Keyboard;
-import jp.kthrlab.pianoroll.PDFToImage;
 import jp.kthrlab.pianoroll.PianoRoll;
 import jp.kthrlab.pianoroll.Timeline;
 import processing.awt.PSurfaceAWT;

@@ -1,4 +1,4 @@
-package jp.kthrlab.pianoroll;
+package jp.kthrlab.pianorollsample;
 
 import java.awt.image.BufferedImage;
 import java.io.InputStream;

@@ -7,7 +7,6 @@ import jp.kthrlab.pianoroll.Channel;
 import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
 import jp.kthrlab.pianoroll.processing_cmx.HorizontalPAppletCmxPianoRoll;
 //import jp.kthrlab.pianoroll.ReceiverModule;
-import jp.kthrlab.pianoroll.PDFToImage;
 import processing.core.PApplet;
 import processing.event.KeyEvent;
 import processing.core.PImage;
