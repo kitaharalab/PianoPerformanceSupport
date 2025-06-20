@@ -35,6 +35,7 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
     int currentImageIndex = 0;
     long lastSwitchTime = 0;
     int switchIntervalMillis = 2000; // 2秒
+    boolean pdfSwitching = false;
 
     IMusicData musicData;
 
@@ -45,7 +46,7 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
 
         if (pdfImage != null && pdfImage.length > 0) {
             long now = millis();
-            if (now - lastSwitchTime > switchIntervalMillis) {
+            if (pdfSwitching && now - lastSwitchTime > switchIntervalMillis) {
                 currentImageIndex = (currentImageIndex + 1) % pdfImage.length;
                 lastSwitchTime = now;
             }
@@ -229,7 +230,10 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
     public void keyPressed() {
         super.keyPressed();
         switch (keyCode) {
-            case ENTER -> startMusic();
+            case ENTER -> {
+                startMusic();
+                pdfSwitching = true;
+            }
             case BACKSPACE -> stopMusic();
         }
     }
