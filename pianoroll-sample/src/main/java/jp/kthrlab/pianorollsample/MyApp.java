@@ -6,7 +6,6 @@ import jp.crestmuse.cmx.amusaj.sp.MidiOutputModule;
 import jp.kthrlab.pianoroll.Channel;
 import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
 import jp.kthrlab.pianoroll.processing_cmx.HorizontalPAppletCmxPianoRoll;
-//import jp.kthrlab.pianoroll.ReceiverModule;
 import processing.core.PApplet;
 import processing.event.KeyEvent;
 import processing.core.PImage;
@@ -42,6 +41,8 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
     @Override
     public void draw() {
         super.draw();
+        //System.out.println("draw loop running");
+
         // PDFToImageを呼び出してpdfを表示する
 
         if (pdfImage != null && pdfImage.length > 0) {
@@ -58,6 +59,14 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
             fill(0);
             text("PDF画像がありません", 10, 20);
         }
+
+        //// 停止リクエストが出ていたら、処理停止
+        //if (ReceiverModule.isStopRequested()) {
+        //    stopMusic();
+        //    pdfSwitching = false;
+        //    ReceiverModule.requestStop(false);
+        //    println("ReceiverModuleによって停止されました");
+        //}
     }
 
     @Override
@@ -66,7 +75,7 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
 
         cmx.showMidiInChooser(this);
         cmx.showMidiOutChooser(this);
-    
+
         setupModules();
 
         musicData = new MusicData(
@@ -121,61 +130,25 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
         }
     }
 
-    //// MIDIノート入力時に呼ばれる
-    //public void onNoteInput(int pitch, int velocity) {
-    //    println("ノート入力: pitch=" + pitch + ", velocity=" + velocity);
-    //    if (isCorrectNote(pitch)) {
-    //        println("正しいノートです（続行）");
-    //        // 続行処理（必要に応じて）
-    //    } else {
-    //        println("間違ったノートです（停止）");
-    //        stopMusic(); // 演奏停止
-    //    }
-    //}
-//
-    //public void onNoteOff(int pitch) {
-    //    // 必要があれば処理を追加
-    //}
-//
-    //private boolean isCorrectNote(int pitch) {
-    //    // 仮実装：60(C4) のみ正解とする
-    //    return pitch == 60;
-    //}
-//
-    //@Override
-    //public void onNoteInput(int pitch, int velocity) {
-    //    println("Note On: pitch=" + pitch + ", velocity=" + velocity);
-    //    if (isCorrectNote(pitch)) {
-    //        println("正しいノートです（続行）");
-    //    } else {
-    //        println("間違ったノートです（停止）");
-    //        stopMusic(); // 間違ったノートで停止
-    //    }
-    //}
-//
-    //@Override
-    //public void onNoteOff(int pitch) {
-    //    println("Note Off: pitch=" + pitch);
-    //}
-//
-    //private boolean isCorrectNote(int pitch) {
-    //    return pitch == 60; // 例：C4 のみ正解とする仮実装
-    //}
-
     private void setupModules() {
+        //System.out.println("setupModules() called");
         try {
+            //System.out.println("module setup start");
             MidiInputModule mi = cmx.createMidiIn(); // 入力モジュール
             MidiOutputModule mo = cmx.createMidiOut(); // 出力モジュール
 
-            //ReceiverModule receiver = new ReceiverModule(this); // NoteInputListener を渡す
+            //ReceiverModule receiver = new ReceiverModule(musicData.getScc().toDataSet());
 
             cmx.addSPModule(mi);
             //cmx.addSPModule(receiver);
             cmx.addSPModule(mo);
 
             // モジュール接続
-            //cmx.connect(mi, 0, receiver, 0);
+            cmx.connect(mi, 0, mo, 0);
+            //cmx.connect(mi, 0, receiver, 0); // MIDI入力を受け取る
             //cmx.connect(receiver, 0, mo, 0); // OUT にも流す場合
+
+            cmx.startSP();
 
             println("モジュール構成完了");
 
@@ -234,7 +207,10 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
                 startMusic();
                 pdfSwitching = true;
             }
-            case BACKSPACE -> stopMusic();
+            case BACKSPACE -> {
+                stopMusic();
+                pdfSwitching = false;
+            }
         }
     }
 

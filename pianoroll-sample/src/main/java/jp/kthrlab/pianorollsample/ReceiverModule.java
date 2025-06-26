@@ -1,80 +1,82 @@
 //package jp.kthrlab.pianorollsample;
 //
-//import jp.crestmuse.cmx.amusaj.sp.*;
-//import jp.crestmuse.cmx.inference.NoteInputListener;
-//import jp.crestmuse.cmx.sound.MIDIConsts;
-//
-//import javax.sound.midi.ShortMessage;
 //import java.util.Arrays;
+//
+//import jp.crestmuse.cmx.amusaj.sp.MidiEventWithTicktime;
+//import jp.crestmuse.cmx.amusaj.sp.SPModule;
+//import jp.crestmuse.cmx.amusaj.sp.TimeSeriesCompatible;
+//import jp.crestmuse.cmx.filewrappers.SCCDataSet;
+//import jp.crestmuse.cmx.processing.CMXController;
 //
 //public class ReceiverModule extends SPModule {
 //
-//    private final NoteInputListener listener;
+//    private static volatile boolean stopRequested = false;
+//    CMXController cmx = CMXController.getInstance();
 //
-//    public ReceiverModule(NoteInputListener listener) {
-//        this.listener = listener;
+//    SCCDataSet sccDataSet;
+//
+//    public static boolean isStopRequested() {
+//        return stopRequested;
 //    }
 //
+//    public static void requestStop() {
+//        stopRequested = true;
+//    }
+//
+//    ReceiverModule(SCCDataSet sccDataSet) {
+//        this.sccDataSet = sccDataSet;
+//    }
+//
+//    // private void getTargetNotes() {
+//    // long tickPosition = cmx.getTickPosition();
+//    // java.util.Arrays.stream(sccDataSet.getPart(0).getNoteOnlyList())
+//    // .filter(note -> note.onset() == tickPosition)
+//    // .collect();
+//    // }
+//
+//    // @Override
+//    // public void execute(java.lang.Object[] objects, TimeSeriesCompatible[]
+//    // timeSeriesCompatibles) throws InterruptedException {
+//    // MidiEventWithTicktime midievt = (MidiEventWithTicktime)objects[0];
+//    // byte[] msg = midievt.getMessageInByteArray();
+//    // System.out.println("ReceiverModule.execute" + msg[0] + " " + msg[1] + " " +
+//    // msg[2]);
+//    // }
+//
 //    @Override
-//    public void execute(Object[] src, Time[] timestamps) {
-//        MIDIEventWithTicktime ev = (MIDIEventWithTicktime) src[0];
-//        int status = ev.getStatus();
-//        int command = status & 0xF0;
+//    public void execute(Object[] objects, TimeSeriesCompatible[] tsc) throws InterruptedException {
+//        System.out.println("execute called");
+//        MidiEventWithTicktime midievt = (MidiEventWithTicktime) objects[0];
+//        byte[] msg = midievt.getMessageInByteArray();
 //
-//        int pitch = ev.getData1();
-//        int velocity = ev.getData2();
+//        // MIDI NOTE ON
+//        if ((msg[0] & 0xF0) == 0x90 && msg[2] > 0) {
+//            int inputPitch = msg[1];
+//            long tick = cmx.getTickPosition();
 //
-//        switch (command) {
-//            case 0x90: // NOTE ON
-//                if (velocity > 0) {
-//                    listener.onNoteInput(pitch, velocity);
-//                } else {
-//                    listener.onNoteOff(pitch); // NOTE ON with 0 velocity = NOTE OFF
-//                }
-//                break;
-//            case 0x80: // NOTE OFF
-//                listener.onNoteOff(pitch);
-//                break;
-//            default:
-//                break;
+//            boolean isCorrect = Arrays.stream(sccDataSet.getPart(0).getNoteOnlyList())
+//                    .anyMatch(note -> Math.abs(note.onset() - tick) <= 1 && note.notenum() == inputPitch);
+//
+//            System.out.println("入力pitch: " + inputPitch + " / tick: " + tick + " → 正解？" + isCorrect);
+//
+//            if (!isCorrect) {
+//                System.out.println("不正ノート → 停止要求");
+//                requestStop(); // ← ここでフラグを立てる
+//            }
 //        }
+//    }
 //
-//        // 出力も必要ならここに addOutput(0, ev); を入れる
-//        addOutput(0, ev); // 忘れずに出力へ渡す
+//    public static void requestStop(boolean value) {
+//        stopRequested = value;
 //    }
 //
 //    @Override
-//    public int getInputCount() {
-//        return 1;
+//    public Class[] getInputClasses() {
+//        return new java.lang.Class[] { MidiEventWithTicktime.class };
 //    }
 //
 //    @Override
-//    public Class<?> getInputClass(int index) {
-//        return MIDIEventWithTicktime.class;
-//    }
-//
-//    @Override
-//    public int getOutputCount() {
-//        return 1;
-//    }
-//
-//    @Override
-//    public Class<?> getOutputClass(int index) {
-//        return MIDIEventWithTicktime.class;
-//    }
-//
-//    @Override
-//    public Class<?>[] getOutputClasses() {
-//        return new Class<?>[] { MIDIEventWithTicktime.class };
-//    }
-//
-//    @Override
-//    public String getInputName(int index) {
-//        return "MIDI Input";
-//    }
-//
-//    @Override
-//    public String getOutputName(int index) {
-//        return "MIDI Output";
+//    public Class[] getOutputClasses() {
+//        return new java.lang.Class[] { MidiEventWithTicktime.class };
 //    }
 //}
