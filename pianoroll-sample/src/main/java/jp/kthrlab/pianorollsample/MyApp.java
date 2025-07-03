@@ -6,6 +6,8 @@ import jp.crestmuse.cmx.amusaj.sp.MidiOutputModule;
 import jp.kthrlab.pianoroll.Channel;
 import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
 import jp.kthrlab.pianoroll.processing_cmx.HorizontalPAppletCmxPianoRoll;
+//import main.java.jp.kthrlab.pianorollsample.PDFToImage;
+//import main.java.jp.kthrlab.pianorollsample.PDFToImage;
 import processing.core.PApplet;
 import processing.event.KeyEvent;
 import processing.core.PImage;
@@ -60,12 +62,22 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
             text("PDF画像がありません", 10, 20);
         }
 
-        //// 停止リクエストが出ていたら、処理停止
+        //tickPositionを取得して、ReceiverModuleのexecute()内で正誤判定を行う
+        long tickPosition = cmx.getTickPosition();
+        ReceiverModule.setTickPosition(tickPosition);
+
+        //startMusic();
+
+        ////停止リクエストが出ていたら、処理停止
         //if (ReceiverModule.isStopRequested()) {
         //    stopMusic();
+        //    System.out.println("!isCorrect");
         //    pdfSwitching = false;
         //    ReceiverModule.requestStop(false);
         //    println("ReceiverModuleによって停止されました");
+        //}
+        //else { 
+        //    startMusic();
         //}
     }
 
@@ -75,8 +87,6 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
 
         cmx.showMidiInChooser(this);
         cmx.showMidiOutChooser(this);
-
-        setupModules();
 
         musicData = new MusicData(
                 // "kirakira2.mid",
@@ -89,7 +99,8 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
                 12);
 
         cmx.smfread(musicData.getScc());
-        // startMusic();
+        setupModules();
+        //startMusic();
 
         List<Color> colors = new ArrayList<>(Arrays.asList(Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN));
         List<Channel> channels = new ArrayList<Channel>();
@@ -116,6 +127,7 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
         // PDF画像の読み込み（配列対応）
         try {
             BufferedImage[] bufferedImages = PDFToImage.loadFirstPageSplitHorizontally("kirakira2-midi.pdf");
+            //BufferedImage[] bufferedImages = PDFToImage.loadFirstPageSplitHorizontally("TchaikovskyPletnevMarch-midi.pdf");
             pdfImage = new PImage[bufferedImages.length];
             for (int i = 0; i < bufferedImages.length; i++) {
                 BufferedImage img = bufferedImages[i];
@@ -137,16 +149,16 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
             MidiInputModule mi = cmx.createMidiIn(); // 入力モジュール
             MidiOutputModule mo = cmx.createMidiOut(); // 出力モジュール
 
-            //ReceiverModule receiver = new ReceiverModule(musicData.getScc().toDataSet());
+            ReceiverModule receiver = new ReceiverModule(musicData.getScc().toDataSet());
 
             cmx.addSPModule(mi);
-            //cmx.addSPModule(receiver);
+            cmx.addSPModule(receiver);
             cmx.addSPModule(mo);
 
             // モジュール接続
-            cmx.connect(mi, 0, mo, 0);
-            //cmx.connect(mi, 0, receiver, 0); // MIDI入力を受け取る
-            //cmx.connect(receiver, 0, mo, 0); // OUT にも流す場合
+            //cmx.connect(mi, 0, mo, 0);
+            cmx.connect(mi, 0, receiver, 0); // MIDI入力を受け取る
+            cmx.connect(receiver, 0, mo, 0); // OUT にも流す場合
 
             cmx.startSP();
 
@@ -181,13 +193,13 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
 
         Button btnStart = new Button("Start");
         btnStart.addActionListener(e -> {
-            startMusic();
+            //startMusic();
         });
         menuBar.add(btnStart);
 
         Button btnStop = new Button("Stop");
         btnStop.addActionListener(e -> {
-            stopMusic();
+            //stopMusic();
         });
         menuBar.add(btnStop);
 
@@ -199,27 +211,18 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
         PApplet.main(new String[] { MyApp.class.getName() });
     }
 
-    @Override
-    public void keyPressed() {
-        super.keyPressed();
-        switch (keyCode) {
-            case ENTER -> {
-                startMusic();
-                pdfSwitching = true;
-            }
-            case BACKSPACE -> {
-                stopMusic();
-                pdfSwitching = false;
-            }
-        }
-    }
-
-    // @Override
-    // public void keyPressed() {
-    // //super.keyPressed();
-    // switch (keyCode) {
-    // case 'a' -> onNoteInput(60, 100); // 'a'キーでC4のノート入力（正解）
-    // case 's' -> onNoteInput(62, 100); // 's'キーでD4のノート入力（不正解で停止）
-    // }
-    // }
+    //@Override
+    //public void keyPressed() {
+    //    super.keyPressed();
+    //    switch (keyCode) {
+    //        case ENTER -> {
+    //            startMusic();
+    //            pdfSwitching = true;
+    //        }
+    //        case BACKSPACE -> {
+    //            stopMusic();
+    //            pdfSwitching = false;
+    //        }
+    //    }
+    //}
 }
