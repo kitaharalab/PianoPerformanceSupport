@@ -3,10 +3,15 @@ package jp.kthrlab.pianorollsample;
 import jp.crestmuse.cmx.processing.CMXController;
 import jp.crestmuse.cmx.amusaj.sp.MidiInputModule; //<>//
 import jp.crestmuse.cmx.amusaj.sp.MidiOutputModule;
+import jp.crestmuse.cmx.amusaj.sp.MidiEventWithTicktime;
+import jp.crestmuse.cmx.amusaj.sp.SPModule;
+import jp.crestmuse.cmx.amusaj.sp.TimeSeriesCompatible;
+import jp.crestmuse.cmx.filewrappers.SCCDataSet;
+import jp.crestmuse.cmx.processing.CMXController;
 import jp.kthrlab.pianoroll.Channel;
 import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
 import jp.kthrlab.pianoroll.processing_cmx.HorizontalPAppletCmxPianoRoll;
-//import main.java.jp.kthrlab.pianorollsample.PDFToImage;
+import jp.kthrlab.pianorollsample.ImageNotePianoRoll;
 //import main.java.jp.kthrlab.pianorollsample.PDFToImage;
 import processing.core.PApplet;
 import processing.event.KeyEvent;
@@ -25,8 +30,11 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
-public class MyApp extends HorizontalPAppletCmxPianoRoll {
+
+public class MyApp extends ImageNotePianoRoll {
 
     private Transmitter midiTransmitter;
 
@@ -37,16 +45,18 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
     long lastSwitchTime = 0;
     int switchIntervalMillis = 2000; // 2秒
     boolean pdfSwitching = false;
+    long prevTickPosition = 0;
+    Long waitingOnset = null;
+    Set<Long> waitingOnsets = new HashSet<>();
 
     IMusicData musicData;
 
     @Override
     public void draw() {
         super.draw();
-        //System.out.println("draw loop running");
+        //println("cmx.isNowPlaying() = " + cmx.isNowPlaying());
 
         // PDFToImageを呼び出してpdfを表示する
-
         if (pdfImage != null && pdfImage.length > 0) {
             long now = millis();
             if (pdfSwitching && now - lastSwitchTime > switchIntervalMillis) {
@@ -68,17 +78,66 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
 
         //startMusic();
 
-        ////停止リクエストが出ていたら、処理停止
-        //if (ReceiverModule.isStopRequested()) {
-        //    stopMusic();
-        //    System.out.println("!isCorrect");
-        //    pdfSwitching = false;
-        //    ReceiverModule.requestStop(false);
-        //    println("ReceiverModuleによって停止されました");
-        //}
-        //else { 
-        //    startMusic();
-        //}
+        try {
+            //println("[draw] tryブロック開始");
+
+            List<SCCDataSet.Note> noteList = Arrays.asList(musicData.getScc().toDataSet().getPart(0).getNoteOnlyList());
+            
+            println("[draw] noteList size: " + noteList.size());
+            println("[draw] prevTickPosition=" + prevTickPosition + ", tickPosition=" + tickPosition);
+
+            // 1. 前回のtickPositionよりも大きく、現在のtickPosition以下のonsetを抽出
+            for (SCCDataSet.Note note : noteList) {
+                //全てのノートのonsetが0になってしまい、正しいonsetが取得できない問題が発生している
+                long onset = note.onset(0);
+                int noteNum = note.notenum();
+                println("[draw] notenum:" + noteNum + ", onset:" + onset);
+
+                if (prevTickPosition < onset && onset <= tickPosition) {
+                    //ここのif文が機能しない問題が発生している
+                    println("new note: onset = " + onset);
+                    waitingOnsets.add(onset);
+                    if (cmx.isNowPlaying()) {
+                        println("stopMusic() 呼び出し！");
+                        stopMusic();
+                        pdfSwitching = false;
+                        println("新しいノートが現れたので停止: onset = " + onset);
+                    }
+                }
+            }
+        
+            // 2. 正しいノートが弾かれたら、該当onsetをwaitingから削除
+            // ここでReceiverModuleから「最後に正しく弾かれたonset」を取得
+            long lastCorrectOnset = ReceiverModule.getLastCorrectOnset();
+            if (waitingOnsets.contains(lastCorrectOnset)) {
+                waitingOnsets.remove(lastCorrectOnset);
+                println("正しく弾かれたので待機解除: onset = " + lastCorrectOnset);
+            }
+        
+            // 3. 正しいノートが弾かれていれば再開、そうでなければ停止維持
+            if (!waitingOnsets.isEmpty()) {
+                if (ReceiverModule.isStopRequested()) {
+                    if (cmx.isNowPlaying()) {
+                        println("stopMusic() 呼び出し！2");
+                        stopMusic();
+                        pdfSwitching = false;
+                        println("まだ待機ノートあり & 誤ノート → 停止維持");
+                    }
+                } else {
+                    if (!cmx.isNowPlaying()) {
+                        startMusic();
+                        pdfSwitching = true;
+                        println("正しいノート取得 → 再生再開");
+                    }
+                }
+            }
+        
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        prevTickPosition = tickPosition;
+
     }
 
     @Override
@@ -98,8 +157,7 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
                 1,
                 12);
 
-        cmx.smfread(musicData.getScc());
-        setupModules();
+        
         //startMusic();
 
         List<Color> colors = new ArrayList<>(Arrays.asList(Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN));
@@ -112,10 +170,19 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
                         "",
                         colors.get(part.channel()));
                 channels.add(channel);
+
+                part.addControlChange(0, 7, 0); // チャンネルのコントロールチェンジを追加
+
+                // test imageNotes
+                //addImageNote(part.getNoteOnlyList()[1]);
+                addImageNote(part.getNoteOnlyList()[6]);
             });
         } catch (TransformerException e) {
             throw new RuntimeException(e);
         }
+
+        cmx.smfread(musicData.getScc());
+        setupModules();
 
         dataModel = new PianoRollDataModelMultiChannel(
                 2,
@@ -136,7 +203,7 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
                         img.getWidth());
                 pdfImage[i].updatePixels();
             }
-            System.out.println("PDF画像配列読み込み成功: " + pdfImage.length + "ページ");
+            //System.out.println("PDF画像配列読み込み成功: " + pdfImage.length + "ページ");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -162,7 +229,7 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
 
             cmx.startSP();
 
-            println("モジュール構成完了");
+            //println("モジュール構成完了");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -178,11 +245,13 @@ public class MyApp extends HorizontalPAppletCmxPianoRoll {
 
     void startMusic() {
         if (!cmx.isNowPlaying()) {
+            //println("startMusic() 呼び出し！");
             cmx.playMusic();
         }
     }
 
     void stopMusic() {
+        //println("stopMusic() 呼び出し！3");
         cmx.stopMusic();
     }
 

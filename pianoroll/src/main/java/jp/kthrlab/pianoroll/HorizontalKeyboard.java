@@ -14,7 +14,7 @@ public class HorizontalKeyboard extends Keyboard {
     public Map<Integer, Float> semitoneXMap;
 
     public HorizontalKeyboard(float width, float height) {
-        this(width, height, 88, 21);
+        this(width, height, 60, 21);
     }
 
     public HorizontalKeyboard(float width, float height, int numKeys, int firstNn) {
