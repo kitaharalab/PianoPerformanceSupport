@@ -7,6 +7,7 @@ import jp.crestmuse.cmx.amusaj.sp.MidiEventWithTicktime;
 import jp.crestmuse.cmx.amusaj.sp.SPModule;
 import jp.crestmuse.cmx.amusaj.sp.TimeSeriesCompatible;
 import jp.crestmuse.cmx.filewrappers.SCCDataSet;
+import jp.crestmuse.cmx.elements.MutableNote;
 import jp.crestmuse.cmx.processing.CMXController;
 import jp.kthrlab.pianoroll.Channel;
 import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
@@ -81,27 +82,27 @@ public class MyApp extends ImageNotePianoRoll {
         try {
             //println("[draw] tryブロック開始");
 
-            List<SCCDataSet.Note> noteList = Arrays.asList(musicData.getScc().toDataSet().getPart(0).getNoteOnlyList());
+            List<MutableNote> noteList = Arrays.asList(musicData.getScc().toDataSet().getPart(0).getNoteOnlyList());
             
-            println("[draw] noteList size: " + noteList.size());
-            println("[draw] prevTickPosition=" + prevTickPosition + ", tickPosition=" + tickPosition);
+            //println("[draw] noteList size: " + noteList.size());
+            //println("[draw] prevTickPosition=" + prevTickPosition + ", tickPosition=" + tickPosition);
 
             // 1. 前回のtickPositionよりも大きく、現在のtickPosition以下のonsetを抽出
-            for (SCCDataSet.Note note : noteList) {
+            for (MutableNote note : noteList) {
                 //全てのノートのonsetが0になってしまい、正しいonsetが取得できない問題が発生している
-                long onset = note.onset(0);
+                long onset = note.onset();
                 int noteNum = note.notenum();
-                println("[draw] notenum:" + noteNum + ", onset:" + onset);
+                //println("[draw] notenum:" + noteNum + ", onset:" + onset);
 
                 if (prevTickPosition < onset && onset <= tickPosition) {
                     //ここのif文が機能しない問題が発生している
                     println("new note: onset = " + onset);
                     waitingOnsets.add(onset);
                     if (cmx.isNowPlaying()) {
-                        println("stopMusic() 呼び出し！");
+                        println("stopMusic()1");
                         stopMusic();
                         pdfSwitching = false;
-                        println("新しいノートが現れたので停止: onset = " + onset);
+                        println("stop: onset = " + onset);
                     }
                 }
             }
@@ -111,23 +112,26 @@ public class MyApp extends ImageNotePianoRoll {
             long lastCorrectOnset = ReceiverModule.getLastCorrectOnset();
             if (waitingOnsets.contains(lastCorrectOnset)) {
                 waitingOnsets.remove(lastCorrectOnset);
-                println("正しく弾かれたので待機解除: onset = " + lastCorrectOnset);
+                println("remove waiting: onset = " + lastCorrectOnset);
             }
+
+            //ReceiverModule.isStopRequested()はいらないのでは？再生されているかどうかはcmx.isNowPlaying()で確認する
+            //次に弾くべき音があるのに再生が停止されない
         
             // 3. 正しいノートが弾かれていれば再開、そうでなければ停止維持
             if (!waitingOnsets.isEmpty()) {
                 if (ReceiverModule.isStopRequested()) {
                     if (cmx.isNowPlaying()) {
-                        println("stopMusic() 呼び出し！2");
+                        println("stopMusic()2");
                         stopMusic();
                         pdfSwitching = false;
-                        println("まだ待機ノートあり & 誤ノート → 停止維持");
+                        //println("まだ待機ノートあり & 誤ノート → 停止維持");
                     }
                 } else {
                     if (!cmx.isNowPlaying()) {
                         startMusic();
                         pdfSwitching = true;
-                        println("正しいノート取得 → 再生再開");
+                        //println("正しいノート取得 → 再生再開");
                     }
                 }
             }
@@ -191,6 +195,8 @@ public class MyApp extends ImageNotePianoRoll {
                 channels,
                 musicData.getScc());
 
+        ((PianoRollDataModelMultiChannel) dataModel).setPixelPerTick(0.05);
+
         // PDF画像の読み込み（配列対応）
         try {
             BufferedImage[] bufferedImages = PDFToImage.loadFirstPageSplitHorizontally("kirakira2-midi.pdf");
@@ -251,7 +257,7 @@ public class MyApp extends ImageNotePianoRoll {
     }
 
     void stopMusic() {
-        //println("stopMusic() 呼び出し！3");
+        println("stopMusic()3");
         cmx.stopMusic();
     }
 

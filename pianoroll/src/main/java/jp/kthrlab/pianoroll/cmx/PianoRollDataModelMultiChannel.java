@@ -55,6 +55,10 @@ public class PianoRollDataModelMultiChannel implements PianoRoll.DataModel {
         return pixelPerTick;
     }
 
+    public void setPixelPerTick(Double pixelPerTick) {
+        this.pixelPerTick = pixelPerTick;
+    }
+
     public List<Channel> getChannels() {
         return channels;
     }
