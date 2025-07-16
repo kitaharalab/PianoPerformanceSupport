@@ -25,11 +25,11 @@ public class PDFToImage {
         try (InputStream is = PDFToImage.class.getResourceAsStream("/" + fileName);
              PDDocument document = PDDocument.load(is)) {
             PDFRenderer renderer = new PDFRenderer(document);
-            BufferedImage fullImage = renderer.renderImageWithDPI(0, 150); // 150dpiの画像に変換
+            BufferedImage fullImage = renderer.renderImageWithDPI(0, 1000); // 150dpiの画像に変換
 
             int width = fullImage.getWidth();
             int height = fullImage.getHeight();
-            int partHeight = height / 15;
+            int partHeight = height / 19;
             BufferedImage[] parts = new BufferedImage[10];
 
             for (int i = 0; i < 10; i++) {

@@ -14,7 +14,7 @@ public class PianoRollDataModelMultiChannel implements PianoRoll.DataModel {
     private int relativeFirstMeasure;
     private int relativeLastMeasure;
     private int beatPerMeasure;
-    private Double pixelPerTick = 0.025;
+    private Double pixelPerTick = 0.1;
     private List<Channel> channels;
     private SCC scc;
 
