@@ -165,6 +165,10 @@ public class MyApp extends ImageNotePianoRoll {
             if (performanceData.hasNotesToPlay(tick)) {
                 stopMusic(); //ノートが残っていれば停止
             } else {
+                if(cmx.getMicrosecondPosition() == cmx.getMicrosecondLength()) {
+                    performanceData.setNotesToPlay();
+                    cmx.setTickPosition(0); // 再生位置を先頭に戻す
+                }
                 startMusic(); //すべて演奏済みなら再開
             }
         });

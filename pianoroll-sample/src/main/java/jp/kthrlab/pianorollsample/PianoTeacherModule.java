@@ -28,7 +28,6 @@ public class PianoTeacherModule extends SPModule {
             System.out.println("PianoTeacherModule.execute" + msg[0] + " " + msg[1] + " " + msg[2] + " " + cmx.getTickPosition());
             performanceData.performed(msg[1]);
         }
-
         timeSeriesCompatibles[0].add(midievt);
     }
 

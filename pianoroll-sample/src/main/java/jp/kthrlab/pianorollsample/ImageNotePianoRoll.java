@@ -64,6 +64,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                                 noStroke();
                                 image(img, x, y, w, h);
                             } else {
+                                //ノートによって色を変更
                                 fill(channel.color.getRGB());
                                 stroke(Color.LIGHT_GRAY.getRGB());
                                 this.rect(x, y, w, h);

@@ -7,11 +7,14 @@ import jp.crestmuse.cmx.processing.CMXController;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+//2つ以上の正解ノートがある場合は変更する必要がある
+
 public class PerformanceData {
     private LinkedHashMap<Byte, LinkedHashMap<Long, List<MutableNote>>> notesToPlay;
     private SCCDataSet sccDataSet;
 
     public PerformanceData(SCCDataSet sccDataSet) {
+        this.sccDataSet = sccDataSet;
         this.setNotesToPlay(sccDataSet);
     }
 
@@ -35,13 +38,9 @@ public class PerformanceData {
         });
     }
 
-//    public void performed(MutableNote note) {
-//        Map.Entry<Byte, LinkedHashMap<Long, List<MutableNote>>> firstEntry = notesToPlay.entrySet().iterator().next();
-//        firstEntry.getValue().remove(note);
-//        if (firstEntry.getValue().isEmpty()) {
-//            notesToPlay.remove(firstEntry);
-//        }
-//    }
+    public void setNotesToPlay() {
+        this.setNotesToPlay(this.sccDataSet);
+    }
 
     public void performed(byte note) {
         //                .takeWhile(entry -> !result.get())
