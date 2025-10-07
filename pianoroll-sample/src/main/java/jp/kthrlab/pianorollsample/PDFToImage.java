@@ -29,7 +29,7 @@ public class PDFToImage {
 
             int width = fullImage.getWidth();
             int height = fullImage.getHeight();
-            int partHeight = height / 19;
+            int partHeight = height / 10; //もとは19
             BufferedImage[] parts = new BufferedImage[10];
 
             for (int i = 0; i < 10; i++) {

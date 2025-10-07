@@ -1,24 +1,25 @@
 package jp.kthrlab.pianorollsample;
 
-import jp.crestmuse.cmx.processing.CMXController;
-import jp.crestmuse.cmx.amusaj.sp.MidiInputModule; //<>//
-import jp.crestmuse.cmx.amusaj.sp.MidiOutputModule;
-import jp.kthrlab.pianoroll.Channel;
-import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
-//import jp.kthrlab.pianoroll.ReceiverModule;
-import processing.core.PApplet;
-import processing.core.PImage;
-
+import java.awt.Button;
+import java.awt.Color; //<>//
 import java.awt.image.BufferedImage;
-
-import javax.sound.midi.Transmitter;
-import javax.swing.*;
-import javax.xml.transform.TransformerException;
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.LongStream;
+
+import javax.sound.midi.Transmitter;
+import javax.swing.JFrame;
+import javax.swing.JMenuBar;
+import javax.xml.transform.TransformerException;
+
+import jp.crestmuse.cmx.amusaj.sp.MidiInputModule;
+import jp.crestmuse.cmx.amusaj.sp.MidiOutputModule;
+import jp.crestmuse.cmx.processing.CMXController;
+import jp.kthrlab.pianoroll.Channel;
+import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
+import processing.core.PApplet;
+import processing.core.PImage;
 
 public class MyApp extends ImageNotePianoRoll {
 
@@ -39,13 +40,24 @@ public class MyApp extends ImageNotePianoRoll {
     public void setup() {
         super.setup();
 
+        MidiSave.main(null);
+
         cmx.showMidiInChooser(this);
         cmx.showMidiOutChooser(this);
     
 
         musicData = new MusicData(
-                // "kirakira2.mid",
                 "kirakira2.mid",
+                //"025500b_.mid",
+                //"ICantGetStarted.mid",
+                //"TchaikovskyPletnevMarch.mid",
+                //"MerryChristmasMr.Lawrence.mid",
+                //"Elise.mid",
+                //"Debussy_Arabesque_1.mid",
+                //"NOC21.mid",
+                //"LIEBESTD91.mid",
+                //"ETU31.mid",
+
                 timeline.getSpan().intValue(),
                 0,
                 4,
@@ -73,6 +85,7 @@ public class MyApp extends ImageNotePianoRoll {
                 //for (int i = 0; i < part.getNoteOnlyList().length; i++) {
                 //    addImageNote(part.getNoteOnlyList()[i]);
                 //}
+
                 addImageNote(part.getNoteOnlyList()[2]);
                 addImageNote(part.getNoteOnlyList()[5]);
                 addImageNote(part.getNoteOnlyList()[7]);
@@ -102,7 +115,7 @@ public class MyApp extends ImageNotePianoRoll {
 
         // PDF画像の読み込み（配列対応）
         try {
-            BufferedImage[] bufferedImages = PDFToImage.loadFirstPageSplitHorizontally("kirakira2-midi.pdf");
+            BufferedImage[] bufferedImages = PDFToImage.loadFirstPageSplitHorizontally("kirakira3.pdf");
             pdfImage = new PImage[bufferedImages.length];
             for (int i = 0; i < bufferedImages.length; i++) {
                 BufferedImage img = bufferedImages[i];
@@ -132,7 +145,7 @@ public class MyApp extends ImageNotePianoRoll {
             //PImage img = pdfImage[currentImageIndex];
             PImage img = pdfImage[2];
 
-            // 表示したい領域の最大サイズ（例：画面の幅と高さの半分）
+            // 表示したい領域の最大サイズ
             float maxW = width;
             float maxH = height / 2.0f;
 
