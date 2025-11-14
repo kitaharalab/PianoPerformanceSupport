@@ -115,7 +115,7 @@ public class MyApp extends ImageNotePianoRoll {
 
         // PDF画像の読み込み（配列対応）
         try {
-            BufferedImage[] bufferedImages = PDFToImage.loadFirstPageSplitHorizontally("kirakira3.pdf");
+            BufferedImage[] bufferedImages = PDFToImage.loadFirstPageSplitHorizontally("kirakira2_first4-midi.pdf");
             pdfImage = new PImage[bufferedImages.length];
             for (int i = 0; i < bufferedImages.length; i++) {
                 BufferedImage img = bufferedImages[i];
@@ -143,7 +143,7 @@ public class MyApp extends ImageNotePianoRoll {
             }
 
             //PImage img = pdfImage[currentImageIndex];
-            PImage img = pdfImage[2];
+            PImage img = pdfImage[1];//kirakira3.pdfは2
 
             // 表示したい領域の最大サイズ
             float maxW = width;
@@ -165,7 +165,40 @@ public class MyApp extends ImageNotePianoRoll {
             float y = 0;
 
             // 画像を縮小して描画（縦横比を維持）
-            image(img, x, y, drawW, drawH);
+            //image(img, x, y, drawW, drawH);
+            
+            // スクロール位置を計算
+            float scrollSpeed = 2.0f; // 1フレームあたりのスクロール速度（ピクセル）
+            float scrollY = ((millis() / 10) * scrollSpeed) % (drawH + maxH);
+
+            // 画像をスクロールして描画
+            //image(img, x, y - scrollY, drawW, drawH);
+            // スクロール量を midi の再生位置（マイクロ秒）に同期させる。
+            // cmx.getMicrosecondPosition() は停止中は再生位置を保持する想定のため、stopMusic() 時はスクロールが止まる。
+            long microLen = cmx.getMicrosecondLength();
+            long microPos = cmx.getMicrosecondPosition();
+            float frac = (microLen > 0) ? (float) microPos / (float) microLen : 0f;
+            scrollY = frac * (drawH + maxH);
+            scrollY = constrain(scrollY, 0, drawH + maxH);
+
+            // メイン描画はファイル末尾の image(...) が行うので、ここではシームレスにループするための
+            // もう一枚（上または下）を必要に応じて描画する。
+            float mainY = y - drawH + scrollY + 150f;
+           
+            // 描画領域の下端から100px上を非表示開始位置とする
+            float hideThresholdY = 150;//y + maxH + 100f;//150;
+
+            // mainY が非表示開始位置より上にある場合はその範囲まで描画する（部分描画を行う）
+            if (mainY < hideThresholdY) {
+                // 描画可能な高さ（visibleH）が 0 より大きいときのみ描画
+                float visibleH = min(drawH, hideThresholdY - mainY);
+                if (visibleH > 0) {
+                    // ソース画像側の取り出す高さを計算（int にキャスト）
+                    int srcH = max(1, (int) (img.height * (visibleH / drawH)));
+                    // 画像の上端から srcH 分だけを縮尺して描画
+                    image(img, x, mainY + 620, drawW, visibleH, 0, 0, img.width, srcH);
+                }
+            }
         } else {
             fill(0);
             text("PDF画像がありません", 10, 20);

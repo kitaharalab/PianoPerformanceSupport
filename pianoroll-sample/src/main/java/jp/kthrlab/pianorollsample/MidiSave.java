@@ -15,7 +15,7 @@ import javax.sound.midi.Track;
 public class MidiSave {
     public static void main(String[] args) {
         String inputPath = "C:\\Users\\songo\\PianoPerformanceSupport\\pianoroll-sample\\src\\main\\resources\\kirakira2.mid";
-        String outputPath = "C:\\Users\\songo\\PianoPerformanceSupport\\pianoroll-sample\\src\\main\\resources\\kirakira2_first6.mid";
+        String outputPath = "C:\\Users\\songo\\PianoPerformanceSupport\\pianoroll-sample\\src\\main\\resources\\kirakira2_first4.mid";
 
         try {
             System.out.println("1. start");
@@ -52,7 +52,7 @@ public class MidiSave {
                             // NOTE_ON のカウント（コピー後に増やす）
                             if (cmd == ShortMessage.NOTE_ON && vel > 0) {
                                 noteCount++;
-                                if (noteCount >= 7) break outer;
+                                if (noteCount >= 5) break outer;
                             }
                         }
                     }
