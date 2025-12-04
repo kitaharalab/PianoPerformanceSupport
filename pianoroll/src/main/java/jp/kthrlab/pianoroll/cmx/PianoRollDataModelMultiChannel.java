@@ -1,14 +1,13 @@
 package jp.kthrlab.pianoroll.cmx;
 
+import java.util.List;
+
+import javax.xml.transform.TransformerException;
+
 import jp.crestmuse.cmx.filewrappers.SCC;
 import jp.crestmuse.cmx.filewrappers.SCCDataSet.Part;
 import jp.crestmuse.cmx.misc.PianoRoll;
 import jp.kthrlab.pianoroll.Channel;
-
-import javax.xml.transform.TransformerException;
-import java.awt.*;
-import java.util.Arrays;
-import java.util.List;
 
 public class PianoRollDataModelMultiChannel implements PianoRoll.DataModel {
     private int relativeFirstMeasure;

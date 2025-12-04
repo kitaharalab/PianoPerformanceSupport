@@ -28,6 +28,7 @@ public class MyApp extends ImageNotePianoRoll {
     CMXController cmx = CMXController.getInstance();
 
     PImage[] pdfImage;
+    PImage[] pdfImage2;
     int currentImageIndex = 0;
     long lastSwitchTime = 0;
     int switchIntervalMillis = 2000; // 2秒
@@ -35,6 +36,9 @@ public class MyApp extends ImageNotePianoRoll {
     IMusicData musicData;
     PerformanceData performanceData;
     long lastTickPosition = 0;
+
+    boolean flash = false;
+    long flashStartTime = 0;
 
     @Override
     public void setup() {
@@ -44,19 +48,18 @@ public class MyApp extends ImageNotePianoRoll {
 
         cmx.showMidiInChooser(this);
         cmx.showMidiOutChooser(this);
-    
 
         musicData = new MusicData(
                 "kirakira2.mid",
-                //"025500b_.mid",
-                //"ICantGetStarted.mid",
-                //"TchaikovskyPletnevMarch.mid",
-                //"MerryChristmasMr.Lawrence.mid",
-                //"Elise.mid",
-                //"Debussy_Arabesque_1.mid",
-                //"NOC21.mid",
-                //"LIEBESTD91.mid",
-                //"ETU31.mid",
+                // "025500b_.mid",
+                // "ICantGetStarted.mid",
+                // "TchaikovskyPletnevMarch.mid",
+                // "MerryChristmasMr.Lawrence.mid",
+                // "Elise.mid",
+                // "Debussy_Arabesque_1.mid",
+                // "NOC21.mid",
+                // "LIEBESTD91.mid",
+                // "ETU31.mid",
 
                 timeline.getSpan().intValue(),
                 0,
@@ -64,8 +67,6 @@ public class MyApp extends ImageNotePianoRoll {
                 48,
                 1,
                 12);
-
-
 
         List<Color> colors = new ArrayList<>(Arrays.asList(Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN));
         List<Channel> channels = new ArrayList<Channel>();
@@ -82,13 +83,17 @@ public class MyApp extends ImageNotePianoRoll {
                 part.addControlChange(0, 7, 0); // チャンネルのコントロールチェンジを追加
 
                 // test imageNotes
-                //for (int i = 0; i < part.getNoteOnlyList().length; i++) {
+                // for (int i = 0; i < part.getNoteOnlyList().length; i++) {
+                // addImageNote(part.getNoteOnlyList()[i]);
+                // }
+
+                //for (int i = 0; i < 4; i++) {
                 //    addImageNote(part.getNoteOnlyList()[i]);
                 //}
 
-                addImageNote(part.getNoteOnlyList()[2]);
-                addImageNote(part.getNoteOnlyList()[5]);
-                addImageNote(part.getNoteOnlyList()[7]);
+                // addImageNote(part.getNoteOnlyList()[1]);
+                // addImageNote(part.getNoteOnlyList()[5]);
+                // addImageNote(part.getNoteOnlyList()[7]);
 
             });
         } catch (TransformerException e) {
@@ -129,96 +134,162 @@ public class MyApp extends ImageNotePianoRoll {
             e.printStackTrace();
         }
 
+        try {
+            BufferedImage[] bufferedImages2 = PDFToImage.loadFirstPageSplitHorizontally("kirakira2_first2-midi.pdf");
+            pdfImage2 = new PImage[bufferedImages2.length];
+            for (int i = 0; i < bufferedImages2.length; i++) {
+                BufferedImage img2 = bufferedImages2[i];
+                pdfImage2[i] = new PImage(img2.getWidth(), img2.getHeight(), ARGB);
+                img2.getRGB(0, 0, img2.getWidth(), img2.getHeight(), pdfImage2[i].pixels, 0,
+                        img2.getWidth());
+                pdfImage2[i].updatePixels();
+            }
+            System.out.println("PDF画像配列読み込み成功: " + pdfImage2.length + "ページ");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
     @Override
     public void draw() {
+        //blendMode(1);
+        //// PDFToImageを呼び出してpdfを表示する
+        //if (pdfImage != null && pdfImage.length > 0) {
+        //    long now = millis();
+        //    if (now - lastSwitchTime > switchIntervalMillis) {
+        //        currentImageIndex = (currentImageIndex + 1) % pdfImage.length;
+        //        lastSwitchTime = now;
+        //    }
+//
+        //    PImage img = pdfImage[1]; // kirakira3.pdfは2
+//
+        //    float maxW = width;
+        //    float maxH = height / 2.0f;
+//
+        //    float imgW = img.width;
+        //    float imgH = img.height;
+//
+        //    float scale = min(maxW / imgW, maxH / imgH);
+//
+        //    float drawW = imgW * scale;
+        //    float drawH = imgH * scale;
+//
+        //    float x = 0; // ← 左側に表示
+        //    float y = 0;
+//
+        //    float scrollSpeed = 2.0f;
+        //    float scrollY = ((millis() / 10) * scrollSpeed) % (drawH + maxH);
+//
+        //    long microLen = cmx.getMicrosecondLength();
+        //    long microPos = cmx.getMicrosecondPosition();
+        //    float frac = (microLen > 0) ? (float) microPos / (float) microLen : 0f;
+        //    scrollY = frac * (drawH + maxH);
+        //    scrollY = constrain(scrollY, 0, drawH + maxH);
+//
+        //    float mainY = y - drawH + scrollY + 150f;
+//
+        //    float hideThresholdY = 150;
+//
+        //    if (mainY < hideThresholdY) {
+        //        float visibleH = min(drawH, hideThresholdY - mainY);
+        //        if (visibleH > 0) {
+        //            int srcH = max(1, (int) (img.height * (visibleH / drawH)));
+        //            int srcW = max(1, img.width / 3);
+//
+        //            image(img, x, mainY + 625, drawW / 3, visibleH,
+        //                    0, 0, srcW, srcH);
+        //        }
+        //    }
+        //}
+//
+        //// === 2つめのPDF（pdfImage2） ===
+        //if (pdfImage2 != null && pdfImage2.length > 0) {
+        //    long now = millis();
+        //    if (now - lastSwitchTime > switchIntervalMillis) {
+        //        currentImageIndex = (currentImageIndex + 1) % pdfImage2.length;
+        //        lastSwitchTime = now;
+        //    }
+//
+        //    PImage img2 = pdfImage2[4];
+//
+        //    float maxW = width;
+        //    float maxH = height / 2.0f;
+//
+        //    float imgW = img2.width;
+        //    float imgH = img2.height;
+//
+        //    float scale = min(maxW / imgW, maxH / imgH);
+//
+        //    float drawW = imgW * scale;
+        //    float drawH = imgH * scale;
+//
+        //    float x = 500;
+        //    float y = 0;
+//
+        //    float scrollSpeed = 2.0f;
+        //    float scrollY = ((millis() / 10) * scrollSpeed) % (drawH + maxH);
+//
+        //    long microLen = cmx.getMicrosecondLength();
+        //    long microPos = cmx.getMicrosecondPosition();
+        //    float frac = (microLen > 0) ? (float) microPos / (float) microLen : 0f;
+        //    scrollY = frac * (drawH + maxH);
+        //    scrollY = constrain(scrollY, 0, drawH + maxH);
+//
+        //    float mainY = y - drawH + scrollY + 150f;
+//
+        //    float hideThresholdY = 150;
+//
+        //    if (mainY < hideThresholdY) {
+        //        float visibleH = min(drawH, hideThresholdY - mainY);
+        //        if (visibleH > 0) {
+        //            int srcH = max(1, (int) (img2.height * (visibleH / drawH)));
+        //            int srcW = max(1, img2.width / 3);
+        //            image(img2, x, mainY + 625, drawW / 3, visibleH,
+        //                    0, 0, srcW, srcH);
+        //        }
+        //    }
+        //}
+
         super.draw();
-        // PDFToImageを呼び出してpdfを表示する
-        if (pdfImage != null && pdfImage.length > 0) {
-            long now = millis();
-            if (now - lastSwitchTime > switchIntervalMillis) {
-                currentImageIndex = (currentImageIndex + 1) % pdfImage.length;
-                lastSwitchTime = now;
-            }
-
-            //PImage img = pdfImage[currentImageIndex];
-            PImage img = pdfImage[1];//kirakira3.pdfは2
-
-            // 表示したい領域の最大サイズ
-            float maxW = width;
-            float maxH = height / 2.0f;
-
-            // 元画像サイズ
-            float imgW = img.width;
-            float imgH = img.height;
-
-            // 縦横比を保ったまま縮小するためのスケーリング倍率を計算
-            float scale = min(maxW / imgW, maxH / imgH);
-
-            // 縮小後の描画サイズ
-            float drawW = imgW * scale;
-            float drawH = imgH * scale;
-
-            // 画面中央に表示する位置
-            float x = 0;
-            float y = 0;
-
-            // 画像を縮小して描画（縦横比を維持）
-            //image(img, x, y, drawW, drawH);
-            
-            // スクロール位置を計算
-            float scrollSpeed = 2.0f; // 1フレームあたりのスクロール速度（ピクセル）
-            float scrollY = ((millis() / 10) * scrollSpeed) % (drawH + maxH);
-
-            // 画像をスクロールして描画
-            //image(img, x, y - scrollY, drawW, drawH);
-            // スクロール量を midi の再生位置（マイクロ秒）に同期させる。
-            // cmx.getMicrosecondPosition() は停止中は再生位置を保持する想定のため、stopMusic() 時はスクロールが止まる。
-            long microLen = cmx.getMicrosecondLength();
-            long microPos = cmx.getMicrosecondPosition();
-            float frac = (microLen > 0) ? (float) microPos / (float) microLen : 0f;
-            scrollY = frac * (drawH + maxH);
-            scrollY = constrain(scrollY, 0, drawH + maxH);
-
-            // メイン描画はファイル末尾の image(...) が行うので、ここではシームレスにループするための
-            // もう一枚（上または下）を必要に応じて描画する。
-            float mainY = y - drawH + scrollY + 150f;
-           
-            // 描画領域の下端から100px上を非表示開始位置とする
-            float hideThresholdY = 150;//y + maxH + 100f;//150;
-
-            // mainY が非表示開始位置より上にある場合はその範囲まで描画する（部分描画を行う）
-            if (mainY < hideThresholdY) {
-                // 描画可能な高さ（visibleH）が 0 より大きいときのみ描画
-                float visibleH = min(drawH, hideThresholdY - mainY);
-                if (visibleH > 0) {
-                    // ソース画像側の取り出す高さを計算（int にキャスト）
-                    int srcH = max(1, (int) (img.height * (visibleH / drawH)));
-                    // 画像の上端から srcH 分だけを縮尺して描画
-                    image(img, x, mainY + 620, drawW, visibleH, 0, 0, img.width, srcH);
-                }
-            }
-        } else {
-            fill(0);
-            text("PDF画像がありません", 10, 20);
-        }
+        //pianoroll/HorizontalPAppletCmxPianoRoll.javaにある
+        //PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
+        //long tickPosition = getCmx().getTickPosition();
+        ////Object tickLock = tickPosition;
+        //Long relativeOnset = note.onset() - tickPosition;
+        //float h = (float) ((note.offset() - note.onset()) * dataModelMultiChannel.getPixelPerTick());
+        //float y = timeline.getSpan() - (relativeOnset * dataModelMultiChannel.getPixelPerTick()) - h;
 
         long tickPosition = cmx.getTickPosition();
         // tick に対応するノートがまだ演奏されていないかチェック
         LongStream.rangeClosed(lastTickPosition, tickPosition).forEach(tick -> {
             println(tick + " " + performanceData.hasNotesToPlay(tick));
             if (performanceData.hasNotesToPlay(tick)) {
-                stopMusic(); //ノートが残っていれば停止
+                stopMusic(); // ノートが残っていれば停止
             } else {
-                if(cmx.getMicrosecondPosition() == cmx.getMicrosecondLength()) {
+                if (cmx.getMicrosecondPosition() == cmx.getMicrosecondLength()) {
                     performanceData.setNotesToPlay();
                     cmx.setTickPosition(0); // 再生位置を先頭に戻す
                 }
-                startMusic(); //すべて演奏済みなら再開
+                startMusic(); // すべて演奏済みなら再開
             }
         });
         lastTickPosition = tickPosition;
+
+        // === 停止時フラッシュ表示 ===
+        if (flash) {
+            // 120ミリ秒だけ光る
+            if (millis() - flashStartTime < 120) {
+                pushStyle();
+                fill(255, 255, 0, 120); // 黄色っぽい光（透明）
+                noStroke();
+                rect(0, 0, width, height); // 全画面を覆う
+                popStyle();
+            } else {
+                flash = false; // フラッシュ終了
+            }
+        }
+
     }
 
     private void setupModules() {
@@ -228,10 +299,9 @@ public class MyApp extends ImageNotePianoRoll {
 
             PianoTeacherModule pianoTeacherModule = new PianoTeacherModule(
                     musicData.getScc().toDataSet(),
-                    performanceData
-                    );
+                    performanceData);
 
-            //ReceiverModule receiver = new ReceiverModule(this); // NoteInputListener を渡す
+            // ReceiverModule receiver = new ReceiverModule(this); // NoteInputListener を渡す
 
             cmx.addSPModule(mi);
             cmx.addSPModule(pianoTeacherModule);
@@ -262,6 +332,8 @@ public class MyApp extends ImageNotePianoRoll {
         if (!cmx.isNowPlaying()) {
             cmx.playMusic();
         }
+        flash = true;
+        flashStartTime = millis();
     }
 
     void stopMusic() {
@@ -269,6 +341,8 @@ public class MyApp extends ImageNotePianoRoll {
         if (cmx.isNowPlaying()) {
             cmx.stopMusic();
         }
+        // flash = true;
+        // flashStartTime = millis();
     }
 
     void createMenu() {
