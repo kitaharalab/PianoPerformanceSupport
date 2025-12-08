@@ -1,18 +1,14 @@
 package jp.kthrlab.pianoroll.processing_cmx;
 
+import java.awt.Color;
+
 import jp.crestmuse.cmx.elements.MutableNote;
-import jp.crestmuse.cmx.filewrappers.SCC;
 import jp.crestmuse.cmx.filewrappers.SCCDataSet;
 import jp.crestmuse.cmx.misc.PianoRoll;
 import jp.crestmuse.cmx.processing.CMXController;
-import jp.kthrlab.pianoroll.Keyboard;
 import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
 import jp.kthrlab.pianoroll.processing.HorizontalPAppletPianoRoll;
 import processing.core.PApplet;
-
-import javax.xml.transform.TransformerException;
-import java.awt.*;
-import java.util.Arrays;
 
 public class HorizontalPAppletCmxPianoRoll extends HorizontalPAppletPianoRoll {
 

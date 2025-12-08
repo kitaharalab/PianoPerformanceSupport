@@ -2,7 +2,6 @@ package jp.kthrlab.pianorollsample;
 
 import java.awt.Button;
 import java.awt.Color; //<>//
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -87,9 +86,9 @@ public class MyApp extends ImageNotePianoRoll {
                 // addImageNote(part.getNoteOnlyList()[i]);
                 // }
 
-                //for (int i = 0; i < 4; i++) {
-                //    addImageNote(part.getNoteOnlyList()[i]);
-                //}
+                // for (int i = 0; i < 4; i++) {
+                // addImageNote(part.getNoteOnlyList()[i]);
+                // }
 
                 // addImageNote(part.getNoteOnlyList()[1]);
                 // addImageNote(part.getNoteOnlyList()[5]);
@@ -118,147 +117,39 @@ public class MyApp extends ImageNotePianoRoll {
                 channels,
                 musicData.getScc());
 
-        // PDF画像の読み込み（配列対応）
-        try {
-            BufferedImage[] bufferedImages = PDFToImage.loadFirstPageSplitHorizontally("kirakira2_first4-midi.pdf");
-            pdfImage = new PImage[bufferedImages.length];
-            for (int i = 0; i < bufferedImages.length; i++) {
-                BufferedImage img = bufferedImages[i];
-                pdfImage[i] = new PImage(img.getWidth(), img.getHeight(), ARGB);
-                img.getRGB(0, 0, img.getWidth(), img.getHeight(), pdfImage[i].pixels, 0,
-                        img.getWidth());
-                pdfImage[i].updatePixels();
-            }
-            System.out.println("PDF画像配列読み込み成功: " + pdfImage.length + "ページ");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        //複数PDFを読み込む
+        String[] pdfs = {
+                "/kirakira2_first2-midi.pdf",
+                "/kirakira2_first4-midi.pdf",
+                "/kirakira2_first8-midi.pdf"
+        };
 
-        try {
-            BufferedImage[] bufferedImages2 = PDFToImage.loadFirstPageSplitHorizontally("kirakira2_first2-midi.pdf");
-            pdfImage2 = new PImage[bufferedImages2.length];
-            for (int i = 0; i < bufferedImages2.length; i++) {
-                BufferedImage img2 = bufferedImages2[i];
-                pdfImage2[i] = new PImage(img2.getWidth(), img2.getHeight(), ARGB);
-                img2.getRGB(0, 0, img2.getWidth(), img2.getHeight(), pdfImage2[i].pixels, 0,
-                        img2.getWidth());
-                pdfImage2[i].updatePixels();
-            }
-            System.out.println("PDF画像配列読み込み成功: " + pdfImage2.length + "ページ");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        loadMultiplePdfSlices(pdfs);
 
+        // カラーバーを隠す部分を指定
+        //1
+        setHighlightIndexes(Arrays.asList(0, 1, 2, 3, 4, 5, 6));
+
+        ////2
+        //setHighlightIndexes(Arrays.asList(0, 1, 2, 3));
+
+        //pdf表示部分を指定
+        setPdfDisplayRule(noteIdx -> {
+            //1
+            if (noteIdx == 6)
+               return new ImageNotePianoRoll.PdfDisplay(2, 0);
+
+            ////2
+            //if (noteIdx == 3)
+            //    return new ImageNotePianoRoll.PdfDisplay(1, 0);
+
+            return null;
+        });
     }
 
     @Override
     public void draw() {
-        //blendMode(1);
-        //// PDFToImageを呼び出してpdfを表示する
-        //if (pdfImage != null && pdfImage.length > 0) {
-        //    long now = millis();
-        //    if (now - lastSwitchTime > switchIntervalMillis) {
-        //        currentImageIndex = (currentImageIndex + 1) % pdfImage.length;
-        //        lastSwitchTime = now;
-        //    }
-//
-        //    PImage img = pdfImage[1]; // kirakira3.pdfは2
-//
-        //    float maxW = width;
-        //    float maxH = height / 2.0f;
-//
-        //    float imgW = img.width;
-        //    float imgH = img.height;
-//
-        //    float scale = min(maxW / imgW, maxH / imgH);
-//
-        //    float drawW = imgW * scale;
-        //    float drawH = imgH * scale;
-//
-        //    float x = 0; // ← 左側に表示
-        //    float y = 0;
-//
-        //    float scrollSpeed = 2.0f;
-        //    float scrollY = ((millis() / 10) * scrollSpeed) % (drawH + maxH);
-//
-        //    long microLen = cmx.getMicrosecondLength();
-        //    long microPos = cmx.getMicrosecondPosition();
-        //    float frac = (microLen > 0) ? (float) microPos / (float) microLen : 0f;
-        //    scrollY = frac * (drawH + maxH);
-        //    scrollY = constrain(scrollY, 0, drawH + maxH);
-//
-        //    float mainY = y - drawH + scrollY + 150f;
-//
-        //    float hideThresholdY = 150;
-//
-        //    if (mainY < hideThresholdY) {
-        //        float visibleH = min(drawH, hideThresholdY - mainY);
-        //        if (visibleH > 0) {
-        //            int srcH = max(1, (int) (img.height * (visibleH / drawH)));
-        //            int srcW = max(1, img.width / 3);
-//
-        //            image(img, x, mainY + 625, drawW / 3, visibleH,
-        //                    0, 0, srcW, srcH);
-        //        }
-        //    }
-        //}
-//
-        //// === 2つめのPDF（pdfImage2） ===
-        //if (pdfImage2 != null && pdfImage2.length > 0) {
-        //    long now = millis();
-        //    if (now - lastSwitchTime > switchIntervalMillis) {
-        //        currentImageIndex = (currentImageIndex + 1) % pdfImage2.length;
-        //        lastSwitchTime = now;
-        //    }
-//
-        //    PImage img2 = pdfImage2[4];
-//
-        //    float maxW = width;
-        //    float maxH = height / 2.0f;
-//
-        //    float imgW = img2.width;
-        //    float imgH = img2.height;
-//
-        //    float scale = min(maxW / imgW, maxH / imgH);
-//
-        //    float drawW = imgW * scale;
-        //    float drawH = imgH * scale;
-//
-        //    float x = 500;
-        //    float y = 0;
-//
-        //    float scrollSpeed = 2.0f;
-        //    float scrollY = ((millis() / 10) * scrollSpeed) % (drawH + maxH);
-//
-        //    long microLen = cmx.getMicrosecondLength();
-        //    long microPos = cmx.getMicrosecondPosition();
-        //    float frac = (microLen > 0) ? (float) microPos / (float) microLen : 0f;
-        //    scrollY = frac * (drawH + maxH);
-        //    scrollY = constrain(scrollY, 0, drawH + maxH);
-//
-        //    float mainY = y - drawH + scrollY + 150f;
-//
-        //    float hideThresholdY = 150;
-//
-        //    if (mainY < hideThresholdY) {
-        //        float visibleH = min(drawH, hideThresholdY - mainY);
-        //        if (visibleH > 0) {
-        //            int srcH = max(1, (int) (img2.height * (visibleH / drawH)));
-        //            int srcW = max(1, img2.width / 3);
-        //            image(img2, x, mainY + 625, drawW / 3, visibleH,
-        //                    0, 0, srcW, srcH);
-        //        }
-        //    }
-        //}
-
         super.draw();
-        //pianoroll/HorizontalPAppletCmxPianoRoll.javaにある
-        //PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
-        //long tickPosition = getCmx().getTickPosition();
-        ////Object tickLock = tickPosition;
-        //Long relativeOnset = note.onset() - tickPosition;
-        //float h = (float) ((note.offset() - note.onset()) * dataModelMultiChannel.getPixelPerTick());
-        //float y = timeline.getSpan() - (relativeOnset * dataModelMultiChannel.getPixelPerTick()) - h;
 
         long tickPosition = cmx.getTickPosition();
         // tick に対応するノートがまだ演奏されていないかチェック
@@ -378,5 +269,4 @@ public class MyApp extends ImageNotePianoRoll {
             case BACKSPACE -> stopMusic();
         }
     }
-
 }
