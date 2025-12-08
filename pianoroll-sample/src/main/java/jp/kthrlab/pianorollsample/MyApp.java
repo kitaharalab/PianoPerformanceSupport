@@ -117,7 +117,7 @@ public class MyApp extends ImageNotePianoRoll {
                 channels,
                 musicData.getScc());
 
-        //複数PDFを読み込む
+        // 複数PDFを読み込む
         String[] pdfs = {
                 "/kirakira2_first2-midi.pdf",
                 "/kirakira2_first4-midi.pdf",
@@ -127,21 +127,21 @@ public class MyApp extends ImageNotePianoRoll {
         loadMultiplePdfSlices(pdfs);
 
         // カラーバーを隠す部分を指定
-        //1
+        // 1
         setHighlightIndexes(Arrays.asList(0, 1, 2, 3, 4, 5, 6));
 
-        ////2
-        //setHighlightIndexes(Arrays.asList(0, 1, 2, 3));
+        //// 2
+        // setHighlightIndexes(Arrays.asList(0, 1, 2, 3));
 
-        //pdf表示部分を指定
+        // pdf表示部分を指定
         setPdfDisplayRule(noteIdx -> {
-            //1
+            // 1
             if (noteIdx == 6)
-               return new ImageNotePianoRoll.PdfDisplay(2, 0);
+                return new ImageNotePianoRoll.PdfDisplay(2, 0);
 
-            ////2
-            //if (noteIdx == 3)
-            //    return new ImageNotePianoRoll.PdfDisplay(1, 0);
+            //// 2
+            // if (noteIdx == 3)
+            // return new ImageNotePianoRoll.PdfDisplay(1, 0);
 
             return null;
         });
@@ -167,17 +167,44 @@ public class MyApp extends ImageNotePianoRoll {
         });
         lastTickPosition = tickPosition;
 
+        //// === 停止時フラッシュ表示 ===
+        // if (flash) {
+        // // 120ミリ秒だけ光る
+        // if (millis() - flashStartTime < 120) {
+        // pushStyle();
+        // fill(255, 255, 0, 120); // 黄色っぽい光（透明）
+        // noStroke();
+        // rect(0, 0, width, height); // 全画面を覆う
+        // popStyle();
+        // } else {
+        // flash = false; // フラッシュ終了
+        // }
+        // }
+
         // === 停止時フラッシュ表示 ===
         if (flash) {
-            // 120ミリ秒だけ光る
+
             if (millis() - flashStartTime < 120) {
+
                 pushStyle();
-                fill(255, 255, 0, 120); // 黄色っぽい光（透明）
                 noStroke();
-                rect(0, 0, width, height); // 全画面を覆う
+                fill(0, 120, 255, 150);
+
+                int thickness = 30;
+
+                // 上枠
+                rect(thickness, 0, width - thickness, thickness);
+
+                // 左枠
+                rect(0, 0, thickness, height - 105);
+
+                // 右枠
+                rect(width - thickness, thickness, thickness, height - 105 - thickness);
+
                 popStyle();
+
             } else {
-                flash = false; // フラッシュ終了
+                flash = false;
             }
         }
 
@@ -232,8 +259,6 @@ public class MyApp extends ImageNotePianoRoll {
         if (cmx.isNowPlaying()) {
             cmx.stopMusic();
         }
-        // flash = true;
-        // flashStartTime = millis();
     }
 
     void createMenu() {
