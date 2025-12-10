@@ -25,7 +25,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
      * 複数PDFを読み込み、それぞれ縦10分割する
      */
     public void loadMultiplePdfSlices(String[] pdfPaths) {
-        pdfSlicesList = new PImage[pdfPaths.length][10];
+        pdfSlicesList = new PImage[pdfPaths.length][25];
 
         for (int i = 0; i < pdfPaths.length; i++) {
             pdfSlicesList[i] = loadPdfSlicesVertical(pdfPaths[i]);
@@ -36,7 +36,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
      * PDF を読み込み、縦方向 10 分割した PImage[] を返す
      */
     private PImage[] loadPdfSlicesVertical(String pdfResource) {
-        PImage[] slices = new PImage[10];
+        PImage[] slices = new PImage[25];
 
         try (var in = getClass().getResourceAsStream(pdfResource)) {
             if (in == null) {
@@ -99,7 +99,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
         float cropW = w * cropXratio;
 
         pushMatrix();
-        translate(-180, absoluteY);
+        translate(-170, absoluteY - (h * s));
         scale(s);
 
         image(img,
@@ -222,45 +222,45 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                                 noStroke();
                                 image(img, x, y, w, h);
                             } else {
-                                //// 全てのノートを黄色で塗る
-                                // fill(channel.color.getRGB());
-                                // stroke(Color.LIGHT_GRAY.getRGB());
-                                // this.rect(x, y, w, h);
-
-                                // ノートによって色を変更
-                                int noteInOctave = note.notenum() % 12;
-                                int fillColor;
-
-                                switch (noteInOctave) {
-                                    case 0: // C
-                                        fillColor = Color.RED.getRGB();
-                                        break;
-                                    case 2: // D
-                                        fillColor = Color.ORANGE.getRGB();
-                                        break;
-                                    case 4: // E
-                                        fillColor = Color.YELLOW.getRGB();
-                                        break;
-                                    case 5: // F
-                                        fillColor = Color.GREEN.getRGB();
-                                        break;
-                                    case 7: // G
-                                        fillColor = new Color(135, 206, 235).getRGB();// 水色
-                                        break;
-                                    case 9: // A
-                                        fillColor = Color.BLUE.getRGB();
-                                        break;
-                                    case 11: // B
-                                        fillColor = new Color(128, 0, 128).getRGB(); // 紫
-                                        break;
-                                    default:
-                                        fillColor = channel.color.getRGB(); // 黒鍵などは元の色
-                                        break;
-                                }
-
-                                fill(fillColor);
+                                // 全てのノートを黄色で塗る
+                                fill(channel.color.getRGB());
                                 stroke(Color.LIGHT_GRAY.getRGB());
                                 this.rect(x, y, w, h);
+
+                                //// ノートによって色を変更
+                                // int noteInOctave = note.notenum() % 12;
+                                // int fillColor;
+                                //
+                                // switch (noteInOctave) {
+                                // case 0: // C
+                                // fillColor = Color.RED.getRGB();
+                                // break;
+                                // case 2: // D
+                                // fillColor = Color.ORANGE.getRGB();
+                                // break;
+                                // case 4: // E
+                                // fillColor = Color.YELLOW.getRGB();
+                                // break;
+                                // case 5: // F
+                                // fillColor = Color.GREEN.getRGB();
+                                // break;
+                                // case 7: // G
+                                // fillColor = new Color(135, 206, 235).getRGB();// 水色
+                                // break;
+                                // case 9: // A
+                                // fillColor = Color.BLUE.getRGB();
+                                // break;
+                                // case 11: // B
+                                // fillColor = new Color(128, 0, 128).getRGB(); // 紫
+                                // break;
+                                // default:
+                                // fillColor = channel.color.getRGB(); // 黒鍵などは元の色
+                                // break;
+                                // }
+                                //
+                                // fill(fillColor);
+                                // stroke(Color.LIGHT_GRAY.getRGB());
+                                // this.rect(x, y, w, h);
 
                                 //// ノートによって色を変更（オクターブによって彩度を変える）
                                 // int noteInOctave = note.notenum() % 12;
@@ -325,7 +325,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                                 text("?", width / 2f, y + h / 2f);
                             }
                             if (pdfRule != null) {
-                                //pdf描画
+                                // pdf描画
                                 PdfDisplay pd = pdfRule.apply(noteIndex);
 
                                 if (pd != null && pd.pdfIndex >= 0 && pd.sliceIndex >= 0) {
@@ -333,7 +333,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                                     this.drawSliceAtY(
                                             pd.pdfIndex,
                                             pd.sliceIndex,
-                                            y,
+                                            y + h,
                                             0.5f);
                                 }
                             }

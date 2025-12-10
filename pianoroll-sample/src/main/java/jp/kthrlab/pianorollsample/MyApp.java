@@ -49,16 +49,15 @@ public class MyApp extends ImageNotePianoRoll {
         cmx.showMidiOutChooser(this);
 
         musicData = new MusicData(
-                "kirakira2.mid",
-                // "025500b_.mid",
-                // "ICantGetStarted.mid",
-                // "TchaikovskyPletnevMarch.mid",
-                // "MerryChristmasMr.Lawrence.mid",
-                // "Elise.mid",
-                // "Debussy_Arabesque_1.mid",
-                // "NOC21.mid",
-                // "LIEBESTD91.mid",
-                // "ETU31.mid",
+                //"kirakira2.mid",
+            
+                //"ex1.mid",
+                //"ex2.mid",
+                "ex3.mid",
+                //"ex4.mid",
+                //"ex5.mid",
+                //"ex6.mid",
+                //"ex1_0to8-midi.mid",
 
                 timeline.getSpan().intValue(),
                 0,
@@ -79,7 +78,8 @@ public class MyApp extends ImageNotePianoRoll {
                 channels.add(channel);
 
                 // mute
-                part.addControlChange(0, 7, 0); // チャンネルのコントロールチェンジを追加
+                part.addControlChange(0, 7, 0); //pc操作の時
+                //part.addControlChange(1, 7, 0); //piano操作の時
 
                 // test imageNotes
                 // for (int i = 0; i < part.getNoteOnlyList().length; i++) {
@@ -119,29 +119,48 @@ public class MyApp extends ImageNotePianoRoll {
 
         // 複数PDFを読み込む
         String[] pdfs = {
-                "/kirakira2_first2-midi.pdf",
-                "/kirakira2_first4-midi.pdf",
-                "/kirakira2_first8-midi.pdf"
+                //"/kirakira2_first2-midi.pdf",
+                //"/kirakira2_first4-midi.pdf",
+                //"/kirakira2_first8-midi.pdf",
+                //"/kirakira2_5_7-midi.pdf",
+                "/ex1.pdf",
+                "/ex1_0to5.pdf",
+                "/ex1_6to8.pdf",
+                "/ex1_9to12.pdf",
+                "/ex1_13to15.pdf",
+                "/ex1_16to21.pdf",
         };
 
         loadMultiplePdfSlices(pdfs);
 
         // カラーバーを隠す部分を指定
         // 1
-        setHighlightIndexes(Arrays.asList(0, 1, 2, 3, 4, 5, 6));
+        //setHighlightIndexes(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7 , 8));
 
         //// 2
         // setHighlightIndexes(Arrays.asList(0, 1, 2, 3));
 
+        // 3
+        //setHighlightIndexes(Arrays.asList(4, 5, 6));
+
         // pdf表示部分を指定
         setPdfDisplayRule(noteIdx -> {
             // 1
-            if (noteIdx == 6)
-                return new ImageNotePianoRoll.PdfDisplay(2, 0);
+            if (noteIdx == 0)
+                return new ImageNotePianoRoll.PdfDisplay(1, 1);
+            // 2
+             if (noteIdx == 3)
+             return new ImageNotePianoRoll.PdfDisplay(2, 1);
+            // 3
+             if (noteIdx == 6)
+             return new ImageNotePianoRoll.PdfDisplay(3, 1);
+            // 4
+             if (noteIdx == 13)
+             return new ImageNotePianoRoll.PdfDisplay(4, 1);
 
-            //// 2
-            // if (noteIdx == 3)
-            // return new ImageNotePianoRoll.PdfDisplay(1, 0);
+             // 5
+             if (noteIdx == 16)
+             return new ImageNotePianoRoll.PdfDisplay(5, 1);
 
             return null;
         });
