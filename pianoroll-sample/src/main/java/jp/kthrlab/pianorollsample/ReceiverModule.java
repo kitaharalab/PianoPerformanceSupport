@@ -1,7 +1,6 @@
 package jp.kthrlab.pianorollsample;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 import jp.crestmuse.cmx.amusaj.sp.MidiEventWithTicktime;
 import jp.crestmuse.cmx.amusaj.sp.SPModule;
@@ -63,13 +62,13 @@ public class ReceiverModule extends SPModule {
                 lastCorrectOnset = currentTick;
                 requestStop(false); // 停止フラグ解除
                 cmx.playMusic();
-                System.out.println("ReceicerModule playmusic");
+                //System.out.println("ReceicerModule playmusic");
             } else {
                 // 不正ノートなら停止
                 //System.out.println("!isCorrect");
                 requestStop(true); // 停止フラグセット
                 cmx.stopMusic();
-                System.out.println("ReceicerModule stopmusic");
+                //System.out.println("ReceicerModule stopmusic");
             }
         }
         tsc[0].add(midievt);

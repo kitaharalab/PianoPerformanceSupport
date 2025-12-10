@@ -1,11 +1,14 @@
 package jp.kthrlab.pianorollsample;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import jp.crestmuse.cmx.elements.MutableNote;
 import jp.crestmuse.cmx.filewrappers.SCCDataSet;
-import jp.crestmuse.cmx.processing.CMXController;
-
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 //2つ以上の正解ノートがある場合は変更する必要がある
 
@@ -71,7 +74,7 @@ public class PerformanceData {
                 break;
             }
             Map.Entry<Long, List<MutableNote>> firstEntry = entry.getValue().entrySet().iterator().next();
-            System.out.println("firstEntry.getKey()=" + firstEntry.getKey());
+            //System.out.println("firstEntry.getKey()=" + firstEntry.getKey());
             result.set(firstEntry.getKey().equals(tickPosition) || tickPosition > firstEntry.getKey());
         }
         return result.get();

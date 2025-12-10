@@ -40,7 +40,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
 
         try (var in = getClass().getResourceAsStream(pdfResource)) {
             if (in == null) {
-                System.out.println("PDF not found: " + pdfResource);
+                //System.out.println("PDF not found: " + pdfResource);
                 return slices;
             }
 

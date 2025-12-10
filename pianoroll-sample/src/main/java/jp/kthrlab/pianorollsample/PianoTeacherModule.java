@@ -25,7 +25,7 @@ public class PianoTeacherModule extends SPModule {
 
         byte[] msg = midievt.getMessageInByteArray();
         if ((msg[0] & 0xF0) == 0x90 && msg[2] > 0) {
-            System.out.println("PianoTeacherModule.execute" + msg[0] + " " + msg[1] + " " + msg[2] + " " + cmx.getTickPosition());
+            //System.out.println("PianoTeacherModule.execute" + msg[0] + " " + msg[1] + " " + msg[2] + " " + cmx.getTickPosition());
             performanceData.performed(msg[1]);
         }
         timeSeriesCompatibles[0].add(midievt);

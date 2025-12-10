@@ -18,13 +18,13 @@ public class MidiSave {
         String outputPath = "C:\\Users\\songo\\PianoPerformanceSupport\\pianoroll-sample\\src\\main\\resources\\ex1_0to8.mid";
 
         try {
-            System.out.println("1. start");
+            //System.out.println("1. start");
             Sequence inputSequence = MidiSystem.getSequence(new File(inputPath));
-            System.out.println("2. input loaded");
+            //System.out.println("2. input loaded");
 
             Sequence outputSequence = new Sequence(inputSequence.getDivisionType(), inputSequence.getResolution());
             Track outputTrack = outputSequence.createTrack();
-            System.out.println("3. output sequence created");
+            //System.out.println("3. output sequence created");
 
             int noteCount = 0;
             Track[] tracks = inputSequence.getTracks();
@@ -125,20 +125,20 @@ public class MidiSave {
             // endOfTrack.setMessage(0x2F, new byte[0], 0);
             // outputTrack.add(new MidiEvent(endOfTrack, outputSequence.getTickLength()));
 
-            System.out.println("4. loop finished");
+            //System.out.println("4. loop finished");
 
             // トラック終端イベントを追加
             MetaMessage endOfTrack = new MetaMessage();
             endOfTrack.setMessage(0x2F, new byte[0], 0);
             outputTrack.add(new MidiEvent(endOfTrack, outputSequence.getTickLength()));
-            System.out.println("5. end of track added");
+            //System.out.println("5. end of track added");
 
             // 保存
             File outputFile = new File(outputPath);
             outputFile.getParentFile().mkdirs(); // フォルダがなければ作成
             int result = MidiSystem.write(outputSequence, 1, outputFile);
-            System.out.println("6. Written bytes: " + result);
-            System.out.println("7. Saved first 4 notes to: " + outputPath);
+            //System.out.println("6. Written bytes: " + result);
+            //System.out.println("7. Saved first 4 notes to: " + outputPath);
 
         } catch (IOException | InvalidMidiDataException e) {
             e.printStackTrace();
