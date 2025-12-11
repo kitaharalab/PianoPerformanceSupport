@@ -1,6 +1,5 @@
 //processingのGUIで、曲を選択できるようにする
 //pdfを全て読み込む
-//startのカラーバーの部分に赤線を弾く
 //1曲目は問題なくpdfを表示できた。2曲目以降がうまくいかない。pdfの切り替えをやって、midiとも対応させる
 //allsongs.addの1つ目はうまくいくと思う
 
@@ -20,10 +19,15 @@ import javax.xml.transform.TransformerException;
 
 import jp.crestmuse.cmx.amusaj.sp.MidiInputModule;
 import jp.crestmuse.cmx.amusaj.sp.MidiOutputModule;
+import jp.crestmuse.cmx.elements.MutableNote;
+import jp.crestmuse.cmx.filewrappers.SCCDataSet;
 import jp.crestmuse.cmx.processing.CMXController;
 import jp.kthrlab.pianoroll.Channel;
 import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
 import jp.kthrlab.pianorollsample.MyApp.PdfRange;
+import jp.kthrlab.pianorollsample.MyApp.PdfRangeBuilder;
+import jp.kthrlab.pianorollsample.ImageNotePianoRoll;
+import jp.kthrlab.pianorollsample.ImageNotePianoRoll.PdfDisplay;
 import processing.core.PApplet;
 import processing.core.PImage;
 
@@ -31,6 +35,7 @@ public class MyApp extends ImageNotePianoRoll {
     List<int[]> allSongs = new ArrayList<>();
     int showSong = 1; // 表示する曲番号（デフォルト 1）
     int noteIdx = 0; // 現在のノート位置
+    int currentPdfDisplayedIndex = -1;
 
     private Transmitter midiTransmitter;
 
@@ -58,9 +63,10 @@ public class MyApp extends ImageNotePianoRoll {
         cmx.showMidiInChooser(this);
         cmx.showMidiOutChooser(this);
 
+        //midiを指定
         musicData = new MusicData(
                 "ex1.mid",
-                // "ex2.mid",
+                //"ex2.mid",
                 // "ex3.mid",
                 // "ex4.mid",
                 // "ex5.mid",
@@ -88,8 +94,8 @@ public class MyApp extends ImageNotePianoRoll {
                 channels.add(channel);
 
                 // mute
-                part.addControlChange(0, 7, 0); // pc操作の時
-                // part.addControlChange(1, 7, 0); //piano操作の時
+                part.addControlChange(0, 7, 0); // pc操作の時に指定
+                // part.addControlChange(1, 7, 0); // piano操作の時に指定
 
                 // test imageNotes
                 // for (int i = 0; i < part.getNoteOnlyList().length; i++) {
@@ -127,14 +133,14 @@ public class MyApp extends ImageNotePianoRoll {
                 channels,
                 musicData.getScc());
 
-        // 複数PDFを読み込む
+        //pdfを指定
         String[] pdfs = {
                 // "/kirakira2_first2-midi.pdf",
                 // "/kirakira2_first4-midi.pdf",
                 // "/kirakira2_first8-midi.pdf",
                 // "/kirakira2_5_7-midi.pdf",
+                // "/ex1.pdf",
 
-                "/ex1.pdf",
                 "/ex1_0to5.pdf",
                 "/ex1_6to8.pdf",
                 "/ex1_9to12.pdf",
@@ -154,11 +160,11 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex1_66.pdf",
                 "/ex1_67.pdf",
                 "/ex1_68to71.pdf",
-                "/ex1_72to74.pdf",
+                "/ex1_72to74.pdf"
 
-                "/ex2_0to4.pdf",
-                "/ex2_5to6.pdf",
-                "/ex2_7to10.pdf",
+                //"/ex2_0to4.pdf",
+                //"/ex2_5to6.pdf",
+                //"/ex2_7to10.pdf",
                 // "/ex2_to.pdf",
                 // "/ex2_to.pdf",
                 // "/ex2_to.pdf",
@@ -181,23 +187,26 @@ public class MyApp extends ImageNotePianoRoll {
 
         loadMultiplePdfSlices(pdfs);
 
-        // List<int[]> allSongs = new ArrayList<>();
+        List<int[]> allSongs = new ArrayList<>();
 
-        allSongs.add(new int[] {
-                6, 3, 4, 3,
-                6, 3, 5, 2,
-                6, 3, 6, 3,
-                4, 4, 4, 4,
-                1, 1, 4, 3
-        });
+        //1小節分の音数を指定する
+        // ex1
+         allSongs.add(new int[] {
+         6, 3, 4, 3,
+         6, 3, 5, 2,
+         6, 3, 6, 3,
+         4, 4, 4, 4,
+         1, 1, 4, 3
+         });
 
-        allSongs.add(new int[] {
-                5, 2, 4
-        });
+        //// ex2
+        //allSongs.add(new int[] {
+        //        5, 2, 4
+        //});
 
-        allSongs.add(new int[] {
-                8, 2, 2, 2
-        });
+        // allSongs.add(new int[] {
+        // 8, 2, 2, 2
+        // });
 
         // --- PdfRange を構築 ---
         List<PdfRange> pdfRanges = new ArrayList<>();
@@ -206,15 +215,28 @@ public class MyApp extends ImageNotePianoRoll {
         // --- 今回表示したい曲番号 ---
         // int showSong = 2;
 
-        // --- PdfDisplayRule 設定 ---
-        int songStart = getSongStartIdx(allSongs, showSong);
-        int songEnd = getSongEndIdx(allSongs, showSong);
+        //// --- PdfDisplayRule 設定 ---
+        // int songStart = getSongStartIdx(allSongs, showSong);
+        // int songEnd = getSongEndIdx(allSongs, showSong);
+
+        List<Integer> highlightList = new ArrayList<>();
+        double highlightRate = 0.3; // カラーバーを隠す割合を指定
+
+        for (PdfRange pr : pdfRanges) {
+            if (Math.random() < highlightRate) {
+                for (int i = pr.startNoteIdx; i <= pr.endNoteIdx; i++) {
+                    highlightList.add(i);
+                }
+            }
+        }
+
+        setHighlightIndexes(highlightList);
 
         setPdfDisplayRule(noteIdx -> {
 
-            if (noteIdx < songStart || noteIdx > songEnd) {
-                return null;
-            }
+            // if (noteIdx < songStart || noteIdx > songEnd) {
+            // return null;
+            // }
 
             for (PdfRange pr : pdfRanges) {
                 if (pr.startNoteIdx == noteIdx) {
@@ -225,24 +247,9 @@ public class MyApp extends ImageNotePianoRoll {
             return null;
         });
 
-        onSongChanged();
+        // onSongChanged();
 
-        // setupPdfRanges(pdfRanges);
-        //
-        // setPdfDisplayRule(noteIdx -> {
-        //
-        // for (PdfRange pr : pdfRanges) {
-        //
-        // // ① noteIdx が PdfRange の start と一致したときだけ表示を切り替える
-        // if (noteIdx == pr.start) {
-        // return new ImageNotePianoRoll.PdfDisplay(pr.pdfIndex, 1);
-        // }
-        // }
-        //
-        // return null; // 該当なし → 何も表示しない
-        // });
-
-        // カラーバーを隠す部分を指定
+        // カラーバーを隠す部分
         // 1
         // setHighlightIndexes(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7 , 8));
 
@@ -252,7 +259,7 @@ public class MyApp extends ImageNotePianoRoll {
         // 3
         // setHighlightIndexes(Arrays.asList(4, 5, 6));
 
-        //// pdf表示部分を指定
+        //// pdf表示部分
         // setPdfDisplayRule(noteIdx -> {
         // // 1
         // if (noteIdx == 0)
@@ -282,7 +289,7 @@ public class MyApp extends ImageNotePianoRoll {
         long tickPosition = cmx.getTickPosition();
         // tick に対応するノートがまだ演奏されていないかチェック
         LongStream.rangeClosed(lastTickPosition, tickPosition).forEach(tick -> {
-            //println(tick + " " + performanceData.hasNotesToPlay(tick));
+            // println(tick + " " + performanceData.hasNotesToPlay(tick));
             if (performanceData.hasNotesToPlay(tick)) {
                 stopMusic(); // ノートが残っていれば停止
             } else {
@@ -294,20 +301,6 @@ public class MyApp extends ImageNotePianoRoll {
             }
         });
         lastTickPosition = tickPosition;
-
-        //// === 停止時フラッシュ表示 ===
-        // if (flash) {
-        // // 120ミリ秒だけ光る
-        // if (millis() - flashStartTime < 120) {
-        // pushStyle();
-        // fill(255, 255, 0, 120); // 黄色っぽい光（透明）
-        // noStroke();
-        // rect(0, 0, width, height); // 全画面を覆う
-        // popStyle();
-        // } else {
-        // flash = false; // フラッシュ終了
-        // }
-        // }
 
         // === 停止時フラッシュ表示 ===
         if (flash) {
@@ -338,6 +331,8 @@ public class MyApp extends ImageNotePianoRoll {
 
     }
 
+//-----------------------------------------------------------------------------------------------------------------pdf関係--------------
+
     List<PdfRange> pdfRanges = new ArrayList<>();
 
     public class PdfRange {
@@ -349,13 +344,6 @@ public class MyApp extends ImageNotePianoRoll {
             this.startNoteIdx = startNoteIdx;
             this.endNoteIdx = endNoteIdx;
             this.pdfIndex = pdfIndex;
-        }
-
-        @Override
-        public String toString() {
-            return "PdfRange[start=" + startNoteIdx +
-                    ", end=" + endNoteIdx +
-                    ", pdfIndex=" + pdfIndex + "]";
         }
     }
 
@@ -374,7 +362,6 @@ public class MyApp extends ImageNotePianoRoll {
             int end = currentNoteIdx + length - 1;
 
             list.add(new PdfRange(start, end, pdfIndex));
-
             currentNoteIdx += length;
 
             return this;
@@ -385,7 +372,7 @@ public class MyApp extends ImageNotePianoRoll {
     public void setupPdfRanges(List<PdfRange> pdfRanges, List<int[]> songLengthsList) {
 
         PdfRangeBuilder b = new PdfRangeBuilder(pdfRanges);
-        int pdfIndex = 1;
+        int pdfIndex = 0;
 
         for (int[] lengths : songLengthsList) {
             for (int len : lengths) {
@@ -395,118 +382,74 @@ public class MyApp extends ImageNotePianoRoll {
         }
     }
 
-    int getSongStartIdx(List<int[]> songs, int songNumber) {
-        int idx = 0;
-        for (int i = 0; i < songNumber - 1; i++) {
-            for (int len : songs.get(i)) {
-                idx += len;
-            }
-        }
-        return idx;
-    }
-
-    int getSongEndIdx(List<int[]> songs, int songNumber) {
-        int start = getSongStartIdx(songs, songNumber);
-        int sum = 0;
-        for (int len : songs.get(songNumber - 1)) {
-            sum += len;
-        }
-        return start + sum - 1;
-    }
-
-    int calculateSongStart(List<int[]> allSongs, int showSong) {
-        // 曲は 1 からスタートしていると仮定（あなたのコードと同じ）
-        int songIndex = showSong - 1;
-
-        int start = 0;
-        for (int i = 0; i < songIndex; i++) {
-            int[] lengths = allSongs.get(i);
-            for (int len : lengths) {
-                start += len;
-            }
-        }
-
-        return start; // ← この値が「その曲の最初の noteIdx」
-    }
-
-    // 曲変更時に呼ぶ処理
-    void onSongChanged() {
-        int newStartIdx = calculateSongStart(allSongs, showSong);
-        noteIdx = newStartIdx;
-
-        //println("曲" + showSong + " の開始 noteIdx = " + noteIdx);
-        //updatePdfForNoteIdx(noteIdx);
-    }
-
-    //void updatePdfForNoteIdx(int idx) {
-    //    for (PdfRange pr : pdfRanges) {
-    //        if (idx >= pr.startNoteIdx && idx <= pr.endNoteIdx) {
-    //            // PDF を切り替え
-    //            setCurrentPdfIndex(pr.pdfIndex);
-    //            break;
-    //        }
-    //    }
-    //}
-
-    // class PdfRange {
-    // int start;
-    // int end;
-    // int pdfIndex;
-    //
-    // PdfRange(int start, int end, int pdfIndex) {
-    // this.start = start;
-    // this.end = end;
-    // this.pdfIndex = pdfIndex;
+    // int getSongStartIdx(List<int[]> songs, int songNumber) {
+    // int idx = 0;
+    // for (int i = 0; i < songNumber - 1; i++) {
+    // for (int len : songs.get(i)) {
+    // idx += len;
+    // }
+    // }
+    // return idx;
     // }
     //
-    // boolean contains(int idx) {
-    // return idx >= start && idx <= end;
+    // int getSongEndIdx(List<int[]> songs, int songNumber) {
+    // int start = getSongStartIdx(songs, songNumber);
+    // int sum = 0;
+    // for (int len : songs.get(songNumber - 1)) {
+    // sum += len;
+    // }
+    // return start + sum - 1;
+    // }
+    //
+    // int calculateSongStart(List<int[]> allSongs, int showSong) {
+    // // 曲は 1 からスタートしていると仮定（あなたのコードと同じ）
+    // int songIndex = showSong - 1;
+    //
+    // int start = 0;
+    // for (int i = 0; i < songIndex; i++) {
+    // int[] lengths = allSongs.get(i);
+    // for (int len : lengths) {
+    // start += len;
     // }
     // }
     //
-    // class PdfRangeBuilder {
-    // private int current = 0;
-    // private List<PdfRange> list;
-    //
-    // PdfRangeBuilder(List<PdfRange> list) {
-    // this.list = list;
+    // return start; // ← この値が「その曲の最初の noteIdx」
     // }
     //
-    // public PdfRangeBuilder add(int length, int pdfIndex) {
-    // int start = current;
-    // int end = start + length - 1;
-    // list.add(new PdfRange(start, end, pdfIndex));
-    // current = end + 1;
-    // return this;
-    // }
+    // void setCurrentPdfIndex(int pdfIndex) {
+    // // 範囲チェック（pdfImage 配列を使う想定）
+    // if (pdfImage == null || pdfIndex < 0 || pdfIndex >= pdfImage.length) {
+    // // println("setCurrentPdfIndex: invalid index=" + pdfIndex);
+    // return;
     // }
     //
-    // void setupPdfRanges(List<PdfRange> pdfRanges) {
+    // if (currentPdfDisplayedIndex == pdfIndex)
+    // return; // 変化なし
     //
-    // PdfRangeBuilder b = new PdfRangeBuilder(pdfRanges);
-    //
-    // b.add(6, 1) // noteIdx 0〜5 → PDF1
-    // .add(3, 2) // noteIdx 6〜8 → PDF2
-    // .add(4, 3)
-    // .add(3, 4)
-    // .add(6, 3)
-    // .add(3, 4)
-    // .add(5, 3)
-    // .add(2, 4)
-    // .add(6, 3)
-    // .add(3, 4)
-    // .add(6, 3)
-    // .add(3, 4)
-    // .add(4, 3)
-    // .add(4, 4)
-    // .add(4, 4)
-    // .add(4, 3)
-    // .add(1, 4)
-    // .add(1, 3)
-    // .add(4, 4)
-    // .add(3, 3);
-    //
+    // currentPdfDisplayedIndex = pdfIndex;
+    // // println("PDF を切り替え: index=" + pdfIndex);
     // }
+    //
+    //// 曲変更時に呼ぶ処理
+    // void onSongChanged() {
+    // int newStartIdx = calculateSongStart(allSongs, showSong);
+    // noteIdx = newStartIdx;
+    //
+    // // println("曲" + showSong + " の開始 noteIdx = " + noteIdx);
+    // updatePdfForNoteIdx(noteIdx);
+    // }
+    //
+    // void updatePdfForNoteIdx(int idx) {
+    // for (PdfRange pr : pdfRanges) {
+    // if (idx >= pr.startNoteIdx && idx <= pr.endNoteIdx) {
+    // // PDF を切り替え
+    // setCurrentPdfIndex(pr.pdfIndex);
+    // break;
+    // }
+    // }
+    // }
+
+//-----------------------------------------------------------------------------------------------------------------pdf関係--------------
 
     private void setupModules() {
         try {
@@ -529,7 +472,7 @@ public class MyApp extends ImageNotePianoRoll {
 
             cmx.startSP();
 
-            //println("モジュール構成完了");
+            // println("モジュール構成完了");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -544,7 +487,7 @@ public class MyApp extends ImageNotePianoRoll {
     }
 
     void startMusic() {
-        //System.out.println("startMusic");
+        // System.out.println("startMusic");
         if (!cmx.isNowPlaying()) {
             cmx.playMusic();
         }
@@ -553,7 +496,7 @@ public class MyApp extends ImageNotePianoRoll {
     }
 
     void stopMusic() {
-        //System.out.println("stopMusic");
+        // System.out.println("stopMusic");
         if (cmx.isNowPlaying()) {
             cmx.stopMusic();
         }

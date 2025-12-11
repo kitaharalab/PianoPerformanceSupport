@@ -2,6 +2,7 @@ package jp.kthrlab.pianorollsample;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -40,7 +41,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
 
         try (var in = getClass().getResourceAsStream(pdfResource)) {
             if (in == null) {
-                //System.out.println("PDF not found: " + pdfResource);
+                // System.out.println("PDF not found: " + pdfResource);
                 return slices;
             }
 
@@ -121,7 +122,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
         }
     }
 
-    private java.util.function.Function<Integer, PdfDisplay> pdfRule = null;
+    public java.util.function.Function<Integer, PdfDisplay> pdfRule = null;
 
     public void setPdfDisplayRule(java.util.function.Function<Integer, PdfDisplay> rule) {
         this.pdfRule = rule;
@@ -186,6 +187,9 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
 
                     if (part != null && part.getNoteOnlyList() != null) {
                         int noteIndex = 0;
+                        List<PdfDisplay> pdfToDraw = new ArrayList<>();
+                        List<Float> pdfY = new ArrayList<>();
+                        List<Float> pdfH = new ArrayList<>();
                         for (MutableNote note : part.getNoteOnlyList()) {
 
                             Long relativeOnset = note.onset() - tickPosition;
@@ -316,28 +320,32 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                             if (highlightIndexes.contains(noteIndex)) {
                                 // 横全域にバーを描画
                                 noStroke();
-                                fill(128, 255);
+                                fill(200, 255);
                                 this.rect(0, y, width, h);
 
-                                fill(255); // 白
-                                textSize(32); // 好きなサイズに変更可能
+                                fill(128);
+                                textSize(32); 
                                 textAlign(CENTER, CENTER);
                                 text("?", width / 2f, y + h / 2f);
                             }
+
+                            // ノート描画ループ内で
                             if (pdfRule != null) {
-                                // pdf描画
                                 PdfDisplay pd = pdfRule.apply(noteIndex);
-
                                 if (pd != null && pd.pdfIndex >= 0 && pd.sliceIndex >= 0) {
-
-                                    this.drawSliceAtY(
-                                            pd.pdfIndex,
-                                            pd.sliceIndex,
-                                            y + h,
-                                            0.5f);
+                                    pdfToDraw.add(pd);
+                                    pdfY.add(y + h);
+                                    pdfH.add(h);
                                 }
                             }
                             noteIndex++;
+                        }
+                        for (int i = 0; i < pdfToDraw.size(); i++) {
+                            PdfDisplay pd = pdfToDraw.get(i);
+                            stroke(80);
+                            strokeWeight(1);
+                            line(0, pdfY.get(i), width, pdfY.get(i));
+                            drawSliceAtY(pd.pdfIndex, pd.sliceIndex, pdfY.get(i), 0.51f);
                         }
                     }
                     blendMode(MULTIPLY);
