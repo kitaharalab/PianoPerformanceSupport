@@ -12,25 +12,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.LongStream;
-import javax.sound.midi.*;
-import java.io.File;
-import java.io.IOException;
 
+import javax.sound.midi.Transmitter;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 import javax.xml.transform.TransformerException;
 
 import jp.crestmuse.cmx.amusaj.sp.MidiInputModule;
 import jp.crestmuse.cmx.amusaj.sp.MidiOutputModule;
-import jp.crestmuse.cmx.elements.MutableNote;
-import jp.crestmuse.cmx.filewrappers.SCCDataSet;
 import jp.crestmuse.cmx.processing.CMXController;
 import jp.kthrlab.pianoroll.Channel;
 import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
 import jp.kthrlab.pianorollsample.MyApp.PdfRange;
 import jp.kthrlab.pianorollsample.MyApp.PdfRangeBuilder;
-import jp.kthrlab.pianorollsample.ImageNotePianoRoll;
-import jp.kthrlab.pianorollsample.ImageNotePianoRoll.PdfDisplay;
 import processing.core.PApplet;
 import processing.core.PImage;
 
@@ -98,8 +92,8 @@ public class MyApp extends ImageNotePianoRoll {
                 channels.add(channel);
 
                 // mute
-                part.addControlChange(0, 7, 0); // pc操作の時に指定
-                // part.addControlChange(1, 7, 0); // piano操作の時に指定
+                //part.addControlChange(0, 7, 0); // pc操作の時に指定
+                part.addControlChange(1, 7, 0); // piano操作の時に指定
 
                 // test imageNotes
                 // for (int i = 0; i < part.getNoteOnlyList().length; i++) {
@@ -234,8 +228,11 @@ public class MyApp extends ImageNotePianoRoll {
             }
         }
 
+        //以下はシステム1ではコメントアウト
+        // カラーバーを隠すかどうかを指定（システム2-カラーバー非表示モードで使用）
         setHighlightIndexes(highlightList);
 
+        //pdfを表示するかどうかを指定（システム2-楽譜表示モードで使用）
         setPdfDisplayRule(noteIdx -> {
 
             // if (noteIdx < songStart || noteIdx > songEnd) {
