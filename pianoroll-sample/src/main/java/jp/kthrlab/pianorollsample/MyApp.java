@@ -63,12 +63,12 @@ public class MyApp extends ImageNotePianoRoll {
 
         // midiを指定
         musicData = new MusicData(
-                 "ex1.mid",
-                //"ex2.mid",
+                // "ex1.mid",
+                // "ex2.mid",
                 // "ex3.mid",
                 // "ex4.mid",
-                // "ex5.mid",
-                // "ex6.mid",
+                //"ex5.mid",
+                "ex6.mid",
 
                 // "ex1_0to8-midi.mid",
                 // "kirakira2.mid",
@@ -93,7 +93,7 @@ public class MyApp extends ImageNotePianoRoll {
 
                 // mute
                 part.addControlChange(0, 7, 0); // pc操作の時に指定
-                //part.addControlChange(1, 7, 0); // piano操作の時
+                // part.addControlChange(1, 7, 0); // piano操作の時
 
                 // test imageNotes
                 // for (int i = 0; i < part.getNoteOnlyList().length; i++) {
@@ -133,49 +133,49 @@ public class MyApp extends ImageNotePianoRoll {
 
         // pdfを指定
         String[] pdfs = {
-                // ex1
-                 "/ex1_0to5.pdf",
-                 "/ex1_6to8.pdf",
-                 "/ex1_9to12.pdf",
-                 "/ex1_13to15.pdf",
-                 "/ex1_16to21.pdf",
-                 "/ex1_22to24.pdf",
-                 "/ex1_25to29.pdf",
-                 "/ex1_30to31.pdf",
-                 "/ex1_32to37.pdf",
-                 "/ex1_38to40.pdf",
-                 "/ex1_41to46.pdf",
-                 "/ex1_47to49.pdf",
-                 "/ex1_50to53.pdf",
-                 "/ex1_54to57.pdf",
-                 "/ex1_58to61.pdf",
-                 "/ex1_62to65.pdf",
-                 "/ex1_66.pdf",
-                 "/ex1_67.pdf",
-                 "/ex1_68to71.pdf",
-                 "/ex1_72to74.pdf"
+                //// ex1
+                // "/ex1_0to5.pdf",
+                // "/ex1_6to8.pdf",
+                // "/ex1_9to12.pdf",
+                // "/ex1_13to15.pdf",
+                // "/ex1_16to21.pdf",
+                // "/ex1_22to24.pdf",
+                // "/ex1_25to29.pdf",
+                // "/ex1_30to31.pdf",
+                // "/ex1_32to37.pdf",
+                // "/ex1_38to40.pdf",
+                // "/ex1_41to46.pdf",
+                // "/ex1_47to49.pdf",
+                // "/ex1_50to53.pdf",
+                // "/ex1_54to57.pdf",
+                // "/ex1_58to61.pdf",
+                // "/ex1_62to65.pdf",
+                // "/ex1_66.pdf",
+                // "/ex1_67.pdf",
+                // "/ex1_68to71.pdf",
+                // "/ex1_72to74.pdf
 
                 //// ex2
-                //"/ex2_0to4.pdf",
-                //"/ex2_5to6.pdf",
-                //"/ex2_7to10.pdf",
-                //"/ex2_11to14.pdf",
-                //"/ex2_15to18.pdf",
-                //"/ex2_19to22.pdf",
-                //"/ex2_23to26.pdf",
-                //"/ex2_27to30.pdf",
-                //"/ex2_31to34.pdf",
-                //"/ex2_35to38.pdf",
-                //"/ex2_39to44.pdf",
-                //"/ex2_45to47.pdf",
-                //"/ex2_48to51.pdf",
-                //"/ex2_52to53.pdf",
-                //"/ex2_54to57.pdf",
-                //"/ex2_58to60.pdf",
-                //"/ex2_61to64.pdf",
-                //"/ex2_65to68.pdf",
-                //"/ex2_69to73.pdf",
-                //"/ex2_74.pdf"
+                // "/ex2_0to4.pdf",
+                // "/ex2_5to6.pdf",
+                // "/ex2_7to10.pdf",
+                // "/ex2_11to14.pdf",
+                // "/ex2_15to18.pdf",
+                // "/ex2_19to22.pdf",
+                // "/ex2_23to26.pdf",
+                // "/ex2_27to30.pdf",
+                // "/ex2_31to34.pdf",
+                // "/ex2_35to38.pdf",
+                // "/ex2_39to44.pdf",
+                // "/ex2_45to47.pdf",
+                // "/ex2_48to51.pdf",
+                // "/ex2_52to53.pdf",
+                // "/ex2_54to57.pdf",
+                // "/ex2_58to60.pdf",
+                // "/ex2_61to64.pdf",
+                // "/ex2_65to68.pdf",
+                // "/ex2_69to73.pdf",
+                // "/ex2_74.pdf"
 
                 //// ex3
                 // "/ex3_0to2.pdf",
@@ -225,40 +225,40 @@ public class MyApp extends ImageNotePianoRoll {
                 // "/ex4_95.pdf"
 
                 //// ex5
-                // "/ex5_0to2.pdf",
-                // "/ex5_3to7.pdf",
-                // "/ex5_8to13.pdf",
-                // "/ex5_14to15.pdf",
-                // "/ex5_16to20.pdf",
-                // "/ex5_21to27.pdf",
-                // "/ex5_28to32.pdf",
-                // "/ex5_33to35.pdf",
-                // "/ex5_36to40.pdf",
-                // "/ex5_41to44.pdf",
-                // "/ex5_45to50.pdf",
-                // "/ex5_51to56.pdf",
-                // "/ex5_57to62.pdf",
-                // "/ex5_63to66.pdf",
-                // "/ex5_67to74.pdf",
-                // "/ex5_75to76.pdf"
+                //"/ex5_0to2.pdf",
+                //"/ex5_3to7.pdf",
+                //"/ex5_8to13.pdf",
+                //"/ex5_14to15.pdf",
+                //"/ex5_16to20.pdf",
+                //"/ex5_21to27.pdf",
+                //"/ex5_28to32.pdf",
+                //"/ex5_33to35.pdf",
+                //"/ex5_36to40.pdf",
+                //"/ex5_41to44.pdf",
+                //"/ex5_45to50.pdf",
+                //"/ex5_51to56.pdf",
+                //"/ex5_57to62.pdf",
+                //"/ex5_63to66.pdf",
+                //"/ex5_67to74.pdf",
+                //"/ex5_75to76.pdf"
 
-                ////ex6
-                // "/ex6_0to3.pdf",
-                // "/ex6_4to6.pdf",
-                // "/ex6_7to9.pdf",
-                // "/ex6_10.pdf",
-                // "/ex6_11to14.pdf",
-                // "/ex6_15to17.pdf",
-                // "/ex6_18to21.pdf",
-                // "/ex6_22to23.pdf",
-                // "/ex6_24to28.pdf",
-                // "/ex6_29to31.pdf",
-                // "/ex6_32to36.pdf",
-                // "/ex6_37to39.pdf",
-                // "/ex6_40to44.pdf",
-                // "/ex6_45to50.pdf",
-                // "/ex6_51to54.pdf",
-                // "/ex6_55to57.pdf"
+                // ex6
+                 "/ex6_0to3.pdf",
+                 "/ex6_4to6.pdf",
+                 "/ex6_7to9.pdf",
+                 "/ex6_10.pdf",
+                 "/ex6_11to14.pdf",
+                 "/ex6_15to17.pdf",
+                 "/ex6_18to21.pdf",
+                 "/ex6_22to23.pdf",
+                 "/ex6_24to28.pdf",
+                 "/ex6_29to31.pdf",
+                 "/ex6_32to36.pdf",
+                 "/ex6_37to39.pdf",
+                 "/ex6_40to44.pdf",
+                 "/ex6_45to50.pdf",
+                 "/ex6_51to54.pdf",
+                 "/ex6_55to57.pdf"
 
                 // "/kirakira2_first2-midi.pdf",
                 // "/kirakira2_first4-midi.pdf",
@@ -272,23 +272,23 @@ public class MyApp extends ImageNotePianoRoll {
         List<int[]> allSongs = new ArrayList<>();
 
         // 1小節分の音数を指定する
-        // ex1
-        allSongs.add(new int[] {
-            6, 3, 4, 3,
-            6, 3, 5, 2,
-            6, 3, 6, 3,
-            4, 4, 4, 4,
-            1, 1, 4, 3
-        });
+        //// ex1
+        // allSongs.add(new int[] {
+        // 6, 3, 4, 3,
+        // 6, 3, 5, 2,
+        // 6, 3, 6, 3,
+        // 4, 4, 4, 4,
+        // 1, 1, 4, 3
+        // });
 
         //// ex2
-        //allSongs.add(new int[] {
-        //        5, 2, 4, 4,
-        //        4, 4, 4, 4,
-        //        4, 4, 6, 3,
-        //        4, 2, 4, 3,
-        //        4, 4, 5, 1
-        //});
+        // allSongs.add(new int[] {
+        // 5, 2, 4, 4,
+        // 4, 4, 4, 4,
+        // 4, 4, 6, 3,
+        // 4, 2, 4, 3,
+        // 4, 4, 5, 1
+        // });
 
         //// ex3
         // allSongs.add(new int[] {
@@ -317,18 +317,18 @@ public class MyApp extends ImageNotePianoRoll {
         // 6, 4, 8, 2
         // });
 
-        //// ex6
-        // allSongs.add(new int[] {
-        // 4, 3, 3, 1,
-        // 4, 3, 4, 2,
-        // 5, 3, 5, 3,
-        // 5, 6, 4, 3
-        // });
+        // ex6
+        allSongs.add(new int[] {
+                4, 3, 3, 1,
+                4, 3, 4, 2,
+                5, 3, 5, 3,
+                5, 6, 4, 3
+        });
 
-    // --- PdfRange を構築 ---
-    List<PdfRange> pdfRanges = new ArrayList<>();
+        // --- PdfRange を構築 ---
+        List<PdfRange> pdfRanges = new ArrayList<>();
 
-    setupPdfRanges(pdfRanges, allSongs);
+        setupPdfRanges(pdfRanges, allSongs);
 
         // --- 今回表示したい曲番号 ---
         // int showSong = 2;
@@ -350,7 +350,7 @@ public class MyApp extends ImageNotePianoRoll {
 
         // 以下はシステム1ではコメントアウト
         // カラーバーを隠すかどうかを指定（システム2-カラーバー非表示モードで使用）
-        //setHighlightIndexes(highlightList);
+        // setHighlightIndexes(highlightList);
 
         // pdfを表示するかどうかを指定（システム2-楽譜表示モードで使用）
         setPdfDisplayRule(noteIdx -> {
