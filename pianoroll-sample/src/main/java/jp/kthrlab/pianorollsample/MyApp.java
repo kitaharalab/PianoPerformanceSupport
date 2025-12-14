@@ -1,9 +1,3 @@
-//processingのGUIで、曲を選択できるようにする
-//pdfを全て読み込む
-//1曲目は問題なくpdfを表示できた。2曲目以降がうまくいかない。pdfの切り替えをやって、midiとも対応させる
-//allsongs.addの1つ目はうまくいくと思う
-//鍵盤の色を決定する
-
 package jp.kthrlab.pianorollsample;
 
 import java.awt.Button;
@@ -34,7 +28,11 @@ public class MyApp extends ImageNotePianoRoll {
     int noteIdx = 0; // 現在のノート位置
     int currentPdfDisplayedIndex = -1;
 
-    // MyReceiver midiRecorder;
+    private MidiRecorder midiRecorder;
+
+    int subjectId = 1;     // 被験者番号
+    int takeCount = 1;     // 保存回数（連番）
+
     private Transmitter midiTransmitter;
 
     CMXController cmx = CMXController.getInstance();
@@ -56,19 +54,19 @@ public class MyApp extends ImageNotePianoRoll {
     public void setup() {
         super.setup();
 
-        MidiSave.main(null);
-
         cmx.showMidiInChooser(this);
         cmx.showMidiOutChooser(this);
 
-        // midiを指定
+        midiRecorder = new MidiRecorder();
+
+        // midiを指定 曲
         musicData = new MusicData(
-                // "ex1.mid",
+                "ex1.mid",
                 // "ex2.mid",
                 // "ex3.mid",
                 // "ex4.mid",
-                //"ex5.mid",
-                "ex6.mid",
+                // "ex5.mid",
+                // "ex6.mid",
 
                 // "ex1_0to8-midi.mid",
                 // "kirakira2.mid",
@@ -92,22 +90,8 @@ public class MyApp extends ImageNotePianoRoll {
                 channels.add(channel);
 
                 // mute
-                part.addControlChange(0, 7, 0); // pc操作の時に指定
-                // part.addControlChange(1, 7, 0); // piano操作の時
-
-                // test imageNotes
-                // for (int i = 0; i < part.getNoteOnlyList().length; i++) {
-                // addImageNote(part.getNoteOnlyList()[i]);
-                // }
-
-                // for (int i = 0; i < 4; i++) {
-                // addImageNote(part.getNoteOnlyList()[i]);
-                // }
-
-                // addImageNote(part.getNoteOnlyList()[1]);
-                // addImageNote(part.getNoteOnlyList()[5]);
-                // addImageNote(part.getNoteOnlyList()[7]);
-
+                // part.addControlChange(0, 7, 0); // pc操作の時に指定 音
+                part.addControlChange(1, 7, 0); // piano操作の時
             });
         } catch (TransformerException e) {
             throw new RuntimeException(e);
@@ -131,29 +115,29 @@ public class MyApp extends ImageNotePianoRoll {
                 channels,
                 musicData.getScc());
 
-        // pdfを指定
+        // pdfを指定 曲
         String[] pdfs = {
-                //// ex1
-                // "/ex1_0to5.pdf",
-                // "/ex1_6to8.pdf",
-                // "/ex1_9to12.pdf",
-                // "/ex1_13to15.pdf",
-                // "/ex1_16to21.pdf",
-                // "/ex1_22to24.pdf",
-                // "/ex1_25to29.pdf",
-                // "/ex1_30to31.pdf",
-                // "/ex1_32to37.pdf",
-                // "/ex1_38to40.pdf",
-                // "/ex1_41to46.pdf",
-                // "/ex1_47to49.pdf",
-                // "/ex1_50to53.pdf",
-                // "/ex1_54to57.pdf",
-                // "/ex1_58to61.pdf",
-                // "/ex1_62to65.pdf",
-                // "/ex1_66.pdf",
-                // "/ex1_67.pdf",
-                // "/ex1_68to71.pdf",
-                // "/ex1_72to74.pdf
+                // ex1
+                "/ex1_0to5.pdf",
+                "/ex1_6to8.pdf",
+                "/ex1_9to12.pdf",
+                "/ex1_13to15.pdf",
+                "/ex1_16to21.pdf",
+                "/ex1_22to24.pdf",
+                "/ex1_25to29.pdf",
+                "/ex1_30to31.pdf",
+                "/ex1_32to37.pdf",
+                "/ex1_38to40.pdf",
+                "/ex1_41to46.pdf",
+                "/ex1_47to49.pdf",
+                "/ex1_50to53.pdf",
+                "/ex1_54to57.pdf",
+                "/ex1_58to61.pdf",
+                "/ex1_62to65.pdf",
+                "/ex1_66.pdf",
+                "/ex1_67.pdf",
+                "/ex1_68to71.pdf",
+                "/ex1_72to74.pdf"
 
                 //// ex2
                 // "/ex2_0to4.pdf",
@@ -225,40 +209,40 @@ public class MyApp extends ImageNotePianoRoll {
                 // "/ex4_95.pdf"
 
                 //// ex5
-                //"/ex5_0to2.pdf",
-                //"/ex5_3to7.pdf",
-                //"/ex5_8to13.pdf",
-                //"/ex5_14to15.pdf",
-                //"/ex5_16to20.pdf",
-                //"/ex5_21to27.pdf",
-                //"/ex5_28to32.pdf",
-                //"/ex5_33to35.pdf",
-                //"/ex5_36to40.pdf",
-                //"/ex5_41to44.pdf",
-                //"/ex5_45to50.pdf",
-                //"/ex5_51to56.pdf",
-                //"/ex5_57to62.pdf",
-                //"/ex5_63to66.pdf",
-                //"/ex5_67to74.pdf",
-                //"/ex5_75to76.pdf"
+                // "/ex5_0to2.pdf",
+                // "/ex5_3to7.pdf",
+                // "/ex5_8to13.pdf",
+                // "/ex5_14to15.pdf",
+                // "/ex5_16to20.pdf",
+                // "/ex5_21to27.pdf",
+                // "/ex5_28to32.pdf",
+                // "/ex5_33to35.pdf",
+                // "/ex5_36to40.pdf",
+                // "/ex5_41to44.pdf",
+                // "/ex5_45to50.pdf",
+                // "/ex5_51to56.pdf",
+                // "/ex5_57to62.pdf",
+                // "/ex5_63to66.pdf",
+                // "/ex5_67to74.pdf",
+                // "/ex5_75to76.pdf"
 
-                // ex6
-                 "/ex6_0to3.pdf",
-                 "/ex6_4to6.pdf",
-                 "/ex6_7to9.pdf",
-                 "/ex6_10.pdf",
-                 "/ex6_11to14.pdf",
-                 "/ex6_15to17.pdf",
-                 "/ex6_18to21.pdf",
-                 "/ex6_22to23.pdf",
-                 "/ex6_24to28.pdf",
-                 "/ex6_29to31.pdf",
-                 "/ex6_32to36.pdf",
-                 "/ex6_37to39.pdf",
-                 "/ex6_40to44.pdf",
-                 "/ex6_45to50.pdf",
-                 "/ex6_51to54.pdf",
-                 "/ex6_55to57.pdf"
+                //// ex6
+                // "/ex6_0to3.pdf",
+                // "/ex6_4to6.pdf",
+                // "/ex6_7to9.pdf",
+                // "/ex6_10.pdf",
+                // "/ex6_11to14.pdf",
+                // "/ex6_15to17.pdf",
+                // "/ex6_18to21.pdf",
+                // "/ex6_22to23.pdf",
+                // "/ex6_24to28.pdf",
+                // "/ex6_29to31.pdf",
+                // "/ex6_32to36.pdf",
+                // "/ex6_37to39.pdf",
+                // "/ex6_40to44.pdf",
+                // "/ex6_45to50.pdf",
+                // "/ex6_51to54.pdf",
+                // "/ex6_55to57.pdf"
 
                 // "/kirakira2_first2-midi.pdf",
                 // "/kirakira2_first4-midi.pdf",
@@ -271,15 +255,15 @@ public class MyApp extends ImageNotePianoRoll {
 
         List<int[]> allSongs = new ArrayList<>();
 
-        // 1小節分の音数を指定する
-        //// ex1
-        // allSongs.add(new int[] {
-        // 6, 3, 4, 3,
-        // 6, 3, 5, 2,
-        // 6, 3, 6, 3,
-        // 4, 4, 4, 4,
-        // 1, 1, 4, 3
-        // });
+        // 1小節分の音数を指定 曲
+        // ex1
+        allSongs.add(new int[] {
+                6, 3, 4, 3,
+                6, 3, 5, 2,
+                6, 3, 6, 3,
+                4, 4, 4, 4,
+                1, 1, 4, 3
+        });
 
         //// ex2
         // allSongs.add(new int[] {
@@ -317,25 +301,18 @@ public class MyApp extends ImageNotePianoRoll {
         // 6, 4, 8, 2
         // });
 
-        // ex6
-        allSongs.add(new int[] {
-                4, 3, 3, 1,
-                4, 3, 4, 2,
-                5, 3, 5, 3,
-                5, 6, 4, 3
-        });
+        //// ex6
+        // allSongs.add(new int[] {
+        // 4, 3, 3, 1,
+        // 4, 3, 4, 2,
+        // 5, 3, 5, 3,
+        // 5, 6, 4, 3
+        // });
 
         // --- PdfRange を構築 ---
         List<PdfRange> pdfRanges = new ArrayList<>();
 
         setupPdfRanges(pdfRanges, allSongs);
-
-        // --- 今回表示したい曲番号 ---
-        // int showSong = 2;
-
-        //// --- PdfDisplayRule 設定 ---
-        // int songStart = getSongStartIdx(allSongs, showSong);
-        // int songEnd = getSongEndIdx(allSongs, showSong);
 
         List<Integer> highlightList = new ArrayList<>();
         double highlightRate = 0.3; // カラーバーを隠す割合を指定
@@ -349,7 +326,7 @@ public class MyApp extends ImageNotePianoRoll {
         }
 
         // 以下はシステム1ではコメントアウト
-        // カラーバーを隠すかどうかを指定（システム2-カラーバー非表示モードで使用）
+        // カラーバーを隠すかどうかを指定 システム（システム2-カラーバー非表示モードで使用）
         // setHighlightIndexes(highlightList);
 
         // pdfを表示するかどうかを指定（システム2-楽譜表示モードで使用）
@@ -368,8 +345,6 @@ public class MyApp extends ImageNotePianoRoll {
             return null;
         });
 
-        // onSongChanged();
-
         // カラーバーを隠す部分
         // 1
         // setHighlightIndexes(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7 , 8));
@@ -379,36 +354,6 @@ public class MyApp extends ImageNotePianoRoll {
 
         // 3
         // setHighlightIndexes(Arrays.asList(4, 5, 6));
-
-        //// pdf表示部分
-        // setPdfDisplayRule(noteIdx -> {
-        // // 1
-        // if (noteIdx == 0)
-        // return new ImageNotePianoRoll.PdfDisplay(1, 1);
-        // // 2
-        // if (noteIdx == 6)
-        // return new ImageNotePianoRoll.PdfDisplay(2, 1);
-        // // 3
-        // if (noteIdx == 9)
-        // return new ImageNotePianoRoll.PdfDisplay(3, 1);
-        // // 4
-        // if (noteIdx == 13)
-        // return new ImageNotePianoRoll.PdfDisplay(4, 1);
-        //
-        // // 5
-        // if (noteIdx == 16)
-        // return new ImageNotePianoRoll.PdfDisplay(5, 1);
-        //
-        // return null;
-        // });
-
-        // try {
-        // midiRecorder = new MyReceiver();
-        // midiTransmitter = MidiSystem.getTransmitter();
-        // midiTransmitter.setReceiver(midiRecorder);
-        // } catch (MidiUnavailableException e) {
-        // e.printStackTrace();
-        // }
     }
 
     @Override
@@ -459,135 +404,6 @@ public class MyApp extends ImageNotePianoRoll {
         }
 
     }
-
-    // @Override
-    // public void stop() {
-    // super.stop();
-    //
-    // if (midiRecorder != null && midiRecorder.getSequence().getTracks()[0].size()
-    // > 0) {
-    // Sequence seq = midiRecorder.getSequence();
-    // File outFile = new
-    // File("C:\\Users\\songo\\PianoPerformanceSupport\\pianoroll-sample\\src\\main\\resources\\output.mid");
-    // try {
-    // int[] types = MidiSystem.getMidiFileTypes(seq);
-    // if (types.length > 0) {
-    // MidiSystem.write(seq, types[0], outFile);
-    // println("MIDI を保存しました: " + outFile.getAbsolutePath());
-    // }
-    // } catch (IOException e) {
-    // e.printStackTrace();
-    // }
-    // }
-    //
-    // if (midiTransmitter != null) {
-    // midiTransmitter.close();
-    // }
-    // }
-    //
-    // class MyReceiver implements Receiver {
-    // private Sequence sequence;
-    // private Track track;
-    // private long startTime;
-    //
-    // public MyReceiver() {
-    // try {
-    // sequence = new Sequence(Sequence.PPQ, 96);
-    // track = sequence.createTrack();
-    // startTime = System.currentTimeMillis();
-    // } catch (InvalidMidiDataException e) {
-    // e.printStackTrace();
-    // }
-    // }
-    //
-    // @Override
-    // public void send(MidiMessage message, long timeStamp) {
-    // if (message instanceof ShortMessage) {
-    // long tick = (System.currentTimeMillis() - startTime) / 10;
-    // try {
-    // track.add(new MidiEvent(message, tick));
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // }
-    // }
-    // }
-    //
-    // @Override
-    // public void close() {
-    // }
-    //
-    // public Sequence getSequence() {
-    // return sequence;
-    // }
-    // }
-
-    // public class MidiRecorder {
-    //
-    // public static void main(String[] args) {
-    // try {
-    // Sequencer sequencer = MidiSystem.getSequencer();
-    // sequencer.open();
-    //
-    // Transmitter trans = MidiSystem.getTransmitter();
-    //
-    // // try-catch で囲む
-    // MyReceiver myRec;
-    // try {
-    // myRec = new MyReceiver();
-    // } catch (InvalidMidiDataException e) {
-    // e.printStackTrace();
-    // return; // 例外時は終了
-    // }
-    //
-    // trans.setReceiver(myRec);
-    //
-    // Sequence sequence = myRec.getSequence();
-    //
-    // File fileOut = new File(
-    // "C:\\Users\\songo\\PianoPerformanceSupport\\pianoroll-sample\\src\\main\\resources\\output.mid");
-    // int[] fileTypes = MidiSystem.getMidiFileTypes(sequence);
-    // if (fileTypes.length > 0) {
-    // MidiSystem.write(sequence, fileTypes[0], fileOut);
-    // }
-    //
-    // sequencer.close();
-    // trans.close();
-    //
-    // } catch (MidiUnavailableException | IOException e) {
-    // e.printStackTrace();
-    // }
-    // }
-    // }
-    //
-    // static class MyReceiver implements Receiver {
-    // private Sequence sequence;
-    // private Track track;
-    // private long startTime;
-    //
-    // public MyReceiver() throws MidiUnavailableException, InvalidMidiDataException
-    // {
-    // // 分解能96のPPQシーケンスを作成
-    // this.sequence = new Sequence(Sequence.PPQ, 96);
-    // this.track = sequence.createTrack();
-    // this.startTime = System.currentTimeMillis();
-    // }
-    //
-    // @Override
-    // public void send(MidiMessage message, long timeStamp) {
-    // // タイムスタンプは実装依存の場合があるため、システム時刻からの相対時間等に変換してMidiEventを作成する
-    // long tick = (System.currentTimeMillis() - startTime) / 10; // 簡単な例
-    // track.add(new MidiEvent(message, tick));
-    // }
-    //
-    // @Override
-    // public void close() {
-    // // リソース解放処理
-    // }
-    //
-    // public Sequence getSequence() {
-    // return sequence;
-    // }
-    // }
 
     // -----------------------------------------------------------------------------------------------------------------pdf関係--------------
 
@@ -640,73 +456,6 @@ public class MyApp extends ImageNotePianoRoll {
         }
     }
 
-    // int getSongStartIdx(List<int[]> songs, int songNumber) {
-    // int idx = 0;
-    // for (int i = 0; i < songNumber - 1; i++) {
-    // for (int len : songs.get(i)) {
-    // idx += len;
-    // }
-    // }
-    // return idx;
-    // }
-    //
-    // int getSongEndIdx(List<int[]> songs, int songNumber) {
-    // int start = getSongStartIdx(songs, songNumber);
-    // int sum = 0;
-    // for (int len : songs.get(songNumber - 1)) {
-    // sum += len;
-    // }
-    // return start + sum - 1;
-    // }
-    //
-    // int calculateSongStart(List<int[]> allSongs, int showSong) {
-    // // 曲は 1 からスタートしていると仮定（あなたのコードと同じ）
-    // int songIndex = showSong - 1;
-    //
-    // int start = 0;
-    // for (int i = 0; i < songIndex; i++) {
-    // int[] lengths = allSongs.get(i);
-    // for (int len : lengths) {
-    // start += len;
-    // }
-    // }
-    //
-    // return start; // ← この値が「その曲の最初の noteIdx」
-    // }
-    //
-    // void setCurrentPdfIndex(int pdfIndex) {
-    // // 範囲チェック（pdfImage 配列を使う想定）
-    // if (pdfImage == null || pdfIndex < 0 || pdfIndex >= pdfImage.length) {
-    // // println("setCurrentPdfIndex: invalid index=" + pdfIndex);
-    // return;
-    // }
-    //
-    // if (currentPdfDisplayedIndex == pdfIndex)
-    // return; // 変化なし
-    //
-    // currentPdfDisplayedIndex = pdfIndex;
-    // // println("PDF を切り替え: index=" + pdfIndex);
-    // }
-    //
-    //// 曲変更時に呼ぶ処理
-    // void onSongChanged() {
-    // int newStartIdx = calculateSongStart(allSongs, showSong);
-    // noteIdx = newStartIdx;
-    //
-    // // println("曲" + showSong + " の開始 noteIdx = " + noteIdx);
-    // updatePdfForNoteIdx(noteIdx);
-    // }
-    //
-    // void updatePdfForNoteIdx(int idx) {
-    // for (PdfRange pr : pdfRanges) {
-    // if (idx >= pr.startNoteIdx && idx <= pr.endNoteIdx) {
-    // // PDF を切り替え
-    // setCurrentPdfIndex(pr.pdfIndex);
-    // break;
-    // }
-    // }
-    // }
-
     // -----------------------------------------------------------------------------------------------------------------pdf関係--------------
 
     private void setupModules() {
@@ -718,15 +467,26 @@ public class MyApp extends ImageNotePianoRoll {
                     musicData.getScc().toDataSet(),
                     performanceData);
 
-            // ReceiverModule receiver = new ReceiverModule(this); // NoteInputListener を渡す
+
+            ReceiverModule receiver = new ReceiverModule(musicData.getScc().toDataSet(), midiRecorder);
+            
 
             cmx.addSPModule(mi);
+            cmx.addSPModule(receiver);
             cmx.addSPModule(pianoTeacherModule);
             cmx.addSPModule(mo);
 
-            // モジュール接続
-            cmx.connect(mi, 0, pianoTeacherModule, 0);
-            cmx.connect(pianoTeacherModule, 0, mo, 0); // OUT にも流す場合
+            cmx.connect(mi, 0, receiver, 0);
+            cmx.connect(receiver, 0, pianoTeacherModule, 0);
+            cmx.connect(pianoTeacherModule, 0, mo, 0);
+
+            // cmx.addSPModule(mi);
+            // cmx.addSPModule(pianoTeacherModule);
+            // cmx.addSPModule(mo);
+            //
+            //// モジュール接続
+            // cmx.connect(mi, 0, pianoTeacherModule, 0);
+            // cmx.connect(pianoTeacherModule, 0, mo, 0); // OUT にも流す場合
 
             cmx.startSP();
 
@@ -791,6 +551,17 @@ public class MyApp extends ImageNotePianoRoll {
         switch (keyCode) {
             case ENTER -> startMusic();
             case BACKSPACE -> stopMusic();
+            //case 'S' -> ReceiverModule.saveRecordedMidi();
         }
+
+        if (key == 's') {
+        String filename =
+            "subject" + subjectId + "_take" + takeCount + ".mid";
+
+        midiRecorder.save(filename);
+        takeCount++;
+
+        midiRecorder.reset();
+    }
     }
 }

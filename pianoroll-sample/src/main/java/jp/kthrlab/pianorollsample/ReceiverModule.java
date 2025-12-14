@@ -12,6 +12,8 @@ public class ReceiverModule extends SPModule {
 
     private static volatile boolean stopRequested = false;
     CMXController cmx = CMXController.getInstance();
+    private static MidiRecorder recorder = new MidiRecorder();
+    private MidiRecorder midiRecorder;
 
     SCCDataSet sccDataSet;
     private static long currentTickPosition = 0;
@@ -35,8 +37,9 @@ public class ReceiverModule extends SPModule {
         stopRequested = true;
     }
 
-    ReceiverModule(SCCDataSet sccDataSet) {
+    ReceiverModule(SCCDataSet sccDataSet, MidiRecorder midiRecorder) {
         this.sccDataSet = sccDataSet;
+        this.midiRecorder = midiRecorder;
     }
 
     @Override
@@ -46,6 +49,8 @@ public class ReceiverModule extends SPModule {
         byte[] msg = midievt.getMessageInByteArray();
         long currentTick = currentTickPosition;
         // System.out.println(currentTick);
+
+        midiRecorder.record(msg);
 
         // MIDI NOTE ON
         if ((msg[0] & 0xF0) == 0x90 && msg[2] > 0) {
@@ -58,17 +63,17 @@ public class ReceiverModule extends SPModule {
 
             if (isCorrect) {
                 // 正解ノートなら再生再開
-                //System.out.println("isCorrect");
+                // System.out.println("isCorrect");
                 lastCorrectOnset = currentTick;
                 requestStop(false); // 停止フラグ解除
                 cmx.playMusic();
-                //System.out.println("ReceicerModule playmusic");
+                // System.out.println("ReceicerModule playmusic");
             } else {
                 // 不正ノートなら停止
-                //System.out.println("!isCorrect");
+                // System.out.println("!isCorrect");
                 requestStop(true); // 停止フラグセット
                 cmx.stopMusic();
-                //System.out.println("ReceicerModule stopmusic");
+                // System.out.println("ReceicerModule stopmusic");
             }
         }
         tsc[0].add(midievt);
