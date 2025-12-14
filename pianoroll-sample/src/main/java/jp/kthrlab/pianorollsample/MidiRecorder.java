@@ -83,7 +83,6 @@ public class MidiRecorder {
     public void save(String path) {
         try {
             MidiSystem.write(sequence, 1, new File(path));
-            System.out.println("MIDI保存完了: " + path);
         } catch (Exception e) {
             e.printStackTrace();
         }
