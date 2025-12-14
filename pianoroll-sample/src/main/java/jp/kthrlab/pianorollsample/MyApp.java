@@ -66,12 +66,13 @@ public class MyApp extends ImageNotePianoRoll {
 
         // midiを指定 曲
         musicData = new MusicData(
-                "ex1.mid",
+                //"ex1.mid",
                 // "ex2.mid",
                 // "ex3.mid",
                 // "ex4.mid",
                 // "ex5.mid",
                 // "ex6.mid",
+                "test.mid",
 
                 // "ex1_0to8-midi.mid",
                 // "kirakira2.mid",
@@ -316,21 +317,6 @@ public class MyApp extends ImageNotePianoRoll {
 
         setupPdfRanges(pdfRanges, allSongs);
 
-        // List<Integer> highlightList = new ArrayList<>();
-        // double highlightRate = 0.3; // カラーバーを隠す割合
-        //
-        // for (PdfRange pr : pdfRanges) {
-        // if (Math.random() < highlightRate) {
-        // for (int i = pr.startNoteIdx; i <= pr.endNoteIdx; i++) {
-        // highlightList.add(i);
-        // }
-        // }
-        // }
-        //
-        //// 以下はシステム1ではコメントアウト
-        //// カラーバーを隠すかどうか
-        // setHighlightIndexes(highlightList);
-
         //// pdfを表示するかどうかを指定　システム2で使用
         //setPdfDisplayRule(noteIdx -> {
 //
@@ -346,6 +332,21 @@ public class MyApp extends ImageNotePianoRoll {
 //
         //    return null;
         //});
+
+        // List<Integer> highlightList = new ArrayList<>();
+        // double highlightRate = 0.3; // カラーバーを隠す割合
+        //
+        // for (PdfRange pr : pdfRanges) {
+        // if (Math.random() < highlightRate) {
+        // for (int i = pr.startNoteIdx; i <= pr.endNoteIdx; i++) {
+        // highlightList.add(i);
+        // }
+        // }
+        // }
+        //
+        //// 以下はシステム1ではコメントアウト
+        //// カラーバーを隠すかどうか
+        // setHighlightIndexes(highlightList);
     }
 
     @Override
@@ -439,8 +440,6 @@ public class MyApp extends ImageNotePianoRoll {
         setHighlightIndexes(newHighlightList);
     }
 
-    // -----------------------------------------------------------------------------------------------------------------pdf関係--------------
-
     List<PdfRange> pdfRanges = new ArrayList<>();
 
     public class PdfRange {
@@ -489,8 +488,6 @@ public class MyApp extends ImageNotePianoRoll {
             }
         }
     }
-
-    // -----------------------------------------------------------------------------------------------------------------pdf関係--------------
 
     private void setupModules() {
         try {
