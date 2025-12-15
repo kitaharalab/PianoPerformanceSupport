@@ -7,6 +7,7 @@ import jp.crestmuse.cmx.amusaj.sp.SPModule;
 import jp.crestmuse.cmx.amusaj.sp.TimeSeriesCompatible;
 import jp.crestmuse.cmx.filewrappers.SCCDataSet;
 import jp.crestmuse.cmx.processing.CMXController;
+import jp.kthrlab.pianoroll.CurrentInputState;
 
 public class ReceiverModule extends SPModule {
 
@@ -55,6 +56,7 @@ public class ReceiverModule extends SPModule {
         // MIDI NOTE ON
         if ((msg[0] & 0xF0) == 0x90 && msg[2] > 0) {
             int inputPitch = msg[1];
+            CurrentInputState.setCurrentNote(inputPitch);
             int tickTolerance = 0;
 
             boolean isCorrect = Arrays.stream(sccDataSet.getPart(0).getNoteOnlyList())
@@ -75,6 +77,14 @@ public class ReceiverModule extends SPModule {
                 cmx.stopMusic();
                 // System.out.println("ReceicerModule stopmusic");
             }
+        }
+        // NOTE OFF
+        if ((msg[0] & 0xF0) == 0x80 || ((msg[0] & 0xF0) == 0x90 && msg[2] == 0)) {
+            int inputPitch = msg[1];
+            if (CurrentInputState.getCurrentNote() == inputPitch) {
+                CurrentInputState.setCurrentNote(-1);
+            }
+
         }
         tsc[0].add(midievt);
     }

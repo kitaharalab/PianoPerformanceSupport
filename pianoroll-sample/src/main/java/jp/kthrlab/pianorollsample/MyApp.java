@@ -35,7 +35,7 @@ public class MyApp extends ImageNotePianoRoll {
     double currentHideRate = 0.0; // 現在の非表示率
     boolean loopJustReset = false; // 先頭に戻った瞬間フラグ
 
-    int subjectId = 100; // 被験者番号を指定
+    int subjectId = 101; // 被験者番号を指定
     int takeCount = 0; // 保存番号の始まり（連番）
 
     private Transmitter midiTransmitter;
@@ -99,7 +99,7 @@ public class MyApp extends ImageNotePianoRoll {
 
                 // mute
                 part.addControlChange(0, 7, 0); // pc操作の時に指定 音
-                // part.addControlChange(1, 7, 0); // piano操作の時
+                part.addControlChange(1, 7, 0); // piano操作の時
             });
         } catch (TransformerException e) {
             throw new RuntimeException(e);
