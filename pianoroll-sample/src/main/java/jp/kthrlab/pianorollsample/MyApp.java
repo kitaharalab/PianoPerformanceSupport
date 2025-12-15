@@ -31,16 +31,18 @@ public class MyApp extends ImageNotePianoRoll {
     private MidiRecorder midiRecorder;
 
     int loopCount = 0; // 何周目か
-    double hideStep = 0.2; // 1周ごとに増やす割合
+    double hideStep = 0.1; // 1周ごとに増やす割合
     double currentHideRate = 0.0; // 現在の非表示率
     boolean loopJustReset = false; // 先頭に戻った瞬間フラグ
 
-    int subjectId = 3; // 被験者番号を指定
+    int subjectId = 100; // 被験者番号を指定
     int takeCount = 0; // 保存番号の始まり（連番）
 
     private Transmitter midiTransmitter;
 
     CMXController cmx = CMXController.getInstance();
+
+    List<Integer> highlightCache = new ArrayList<>();
 
     PImage[] pdfImage;
     PImage[] pdfImage2;
@@ -66,13 +68,13 @@ public class MyApp extends ImageNotePianoRoll {
 
         // midiを指定 曲
         musicData = new MusicData(
-                //"ex1.mid",
-                // "ex2.mid",
+                // "ex1.mid",
+                "ex2.mid",
                 // "ex3.mid",
                 // "ex4.mid",
                 // "ex5.mid",
                 // "ex6.mid",
-                "test.mid",
+                // "test.mid",
 
                 // "ex1_0to8-midi.mid",
                 // "kirakira2.mid",
@@ -96,8 +98,8 @@ public class MyApp extends ImageNotePianoRoll {
                 channels.add(channel);
 
                 // mute
-                // part.addControlChange(0, 7, 0); // pc操作の時に指定 音
-                part.addControlChange(1, 7, 0); // piano操作の時
+                part.addControlChange(0, 7, 0); // pc操作の時に指定 音
+                // part.addControlChange(1, 7, 0); // piano操作の時
             });
         } catch (TransformerException e) {
             throw new RuntimeException(e);
@@ -123,49 +125,49 @@ public class MyApp extends ImageNotePianoRoll {
 
         // pdfを指定 曲
         String[] pdfs = {
-                // ex1
-                "/ex1_0to5.pdf",
-                "/ex1_6to8.pdf",
-                "/ex1_9to12.pdf",
-                "/ex1_13to15.pdf",
-                "/ex1_16to21.pdf",
-                "/ex1_22to24.pdf",
-                "/ex1_25to29.pdf",
-                "/ex1_30to31.pdf",
-                "/ex1_32to37.pdf",
-                "/ex1_38to40.pdf",
-                "/ex1_41to46.pdf",
-                "/ex1_47to49.pdf",
-                "/ex1_50to53.pdf",
-                "/ex1_54to57.pdf",
-                "/ex1_58to61.pdf",
-                "/ex1_62to65.pdf",
-                "/ex1_66.pdf",
-                "/ex1_67.pdf",
-                "/ex1_68to71.pdf",
-                "/ex1_72to74.pdf"
+                //// ex1
+                // "/ex1_0to5.pdf",
+                // "/ex1_6to8.pdf",
+                // "/ex1_9to12.pdf",
+                // "/ex1_13to15.pdf",
+                // "/ex1_16to21.pdf",
+                // "/ex1_22to24.pdf",
+                // "/ex1_25to29.pdf",
+                // "/ex1_30to31.pdf",
+                // "/ex1_32to37.pdf",
+                // "/ex1_38to40.pdf",
+                // "/ex1_41to46.pdf",
+                // "/ex1_47to49.pdf",
+                // "/ex1_50to53.pdf",
+                // "/ex1_54to57.pdf",
+                // "/ex1_58to61.pdf",
+                // "/ex1_62to65.pdf",
+                // "/ex1_66.pdf",
+                // "/ex1_67.pdf",
+                // "/ex1_68to71.pdf",
+                // "/ex1_72to74.pdf"
 
-                //// ex2
-                // "/ex2_0to4.pdf",
-                // "/ex2_5to6.pdf",
-                // "/ex2_7to10.pdf",
-                // "/ex2_11to14.pdf",
-                // "/ex2_15to18.pdf",
-                // "/ex2_19to22.pdf",
-                // "/ex2_23to26.pdf",
-                // "/ex2_27to30.pdf",
-                // "/ex2_31to34.pdf",
-                // "/ex2_35to38.pdf",
-                // "/ex2_39to44.pdf",
-                // "/ex2_45to47.pdf",
-                // "/ex2_48to51.pdf",
-                // "/ex2_52to53.pdf",
-                // "/ex2_54to57.pdf",
-                // "/ex2_58to60.pdf",
-                // "/ex2_61to64.pdf",
-                // "/ex2_65to68.pdf",
-                // "/ex2_69to73.pdf",
-                // "/ex2_74.pdf"
+                // ex2
+                "/ex2_0to4.pdf",
+                "/ex2_5to6.pdf",
+                "/ex2_7to10.pdf",
+                "/ex2_11to14.pdf",
+                "/ex2_15to18.pdf",
+                "/ex2_19to22.pdf",
+                "/ex2_23to26.pdf",
+                "/ex2_27to30.pdf",
+                "/ex2_31to34.pdf",
+                "/ex2_35to38.pdf",
+                "/ex2_39to44.pdf",
+                "/ex2_45to47.pdf",
+                "/ex2_48to51.pdf",
+                "/ex2_52to53.pdf",
+                "/ex2_54to57.pdf",
+                "/ex2_58to60.pdf",
+                "/ex2_61to64.pdf",
+                "/ex2_65to68.pdf",
+                "/ex2_69to73.pdf",
+                "/ex2_74.pdf"
 
                 //// ex3
                 // "/ex3_0to2.pdf",
@@ -183,6 +185,8 @@ public class MyApp extends ImageNotePianoRoll {
                 // "/ex3_46to48.pdf",
                 // "/ex3_49to51.pdf",
                 // "/ex3_52to57.pdf",
+                // "/ex3_58.pdf"
+
                 // "/ex3_58to61.pdf",
                 // "/ex3_62to65.pdf",
                 // "/ex3_66to70.pdf",
@@ -262,31 +266,30 @@ public class MyApp extends ImageNotePianoRoll {
         List<int[]> allSongs = new ArrayList<>();
 
         // 1小節分の音数を指定 曲
-        // ex1
-        allSongs.add(new int[] {
-                6, 3, 4, 3,
-                6, 3, 5, 2,
-                6, 3, 6, 3,
-                4, 4, 4, 4,
-                1, 1, 4, 3
-        });
-
-        //// ex2
+        //// ex1
         // allSongs.add(new int[] {
-        // 5, 2, 4, 4,
+        // 6, 3, 4, 3,
+        // 6, 3, 5, 2,
+        // 6, 3, 6, 3,
         // 4, 4, 4, 4,
-        // 4, 4, 6, 3,
-        // 4, 2, 4, 3,
-        // 4, 4, 5, 1
+        // 1, 1, 4, 3
         // });
+
+        // ex2
+        allSongs.add(new int[] {
+                5, 2, 4, 4,
+                4, 4, 4, 4,
+                4, 4, 6, 3,
+                4, 2, 4, 3,
+                4, 4, 5, 1
+        });
 
         //// ex3
         // allSongs.add(new int[] {
         // 3, 3, 6, 1,
         // 3, 3, 6, 2,
         // 6, 6, 6, 1,
-        // 3, 3, 6, 4,
-        // 4, 5, 1
+        // 3, 3, 6, 1
         // });
 
         //// ex4
@@ -317,21 +320,21 @@ public class MyApp extends ImageNotePianoRoll {
 
         setupPdfRanges(pdfRanges, allSongs);
 
-        //// pdfを表示するかどうかを指定　システム2で使用
-        //setPdfDisplayRule(noteIdx -> {
-//
-        //    // if (noteIdx < songStart || noteIdx > songEnd) {
-        //    // return null;
-        //    // }
-//
-        //    for (PdfRange pr : pdfRanges) {
-        //        if (pr.startNoteIdx == noteIdx) {
-        //            return new ImageNotePianoRoll.PdfDisplay(pr.pdfIndex, 1);
-        //        }
-        //    }
-//
-        //    return null;
-        //});
+        // pdfを表示するかどうかを指定 システム2で使用
+        setPdfDisplayRule(noteIdx -> {
+
+            // if (noteIdx < songStart || noteIdx > songEnd) {
+            // return null;
+            // }
+
+            for (PdfRange pr : pdfRanges) {
+                if (pr.startNoteIdx == noteIdx) {
+                    return new ImageNotePianoRoll.PdfDisplay(pr.pdfIndex, 1);
+                }
+            }
+
+            return null;
+        });
 
         // List<Integer> highlightList = new ArrayList<>();
         // double highlightRate = 0.3; // カラーバーを隠す割合
@@ -401,44 +404,73 @@ public class MyApp extends ImageNotePianoRoll {
             }
         }
 
-        ////カラーバーを隠すかどうかを指定　システム2で使用
-        //if (loopJustReset) {
-        //    loopJustReset = false;
-//
-        //    loopCount++;
-        //    currentHideRate = Math.min(1.0, loopCount * hideStep);
-//
-        //    updateHighlightByRate(currentHideRate);
-        //}
+        // カラーバーを隠すかどうかを指定 システム2で使用
+        if (loopJustReset) {
+            loopJustReset = false;
+
+            loopCount++;
+            currentHideRate = Math.min(1.0, loopCount * hideStep);
+
+            updateHighlightByRate(currentHideRate);
+        }
 
     }
 
-    // カラーバーを隠す割合を設定して更新
     void updateHighlightByRate(double rate) {
 
-        List<Integer> newHighlightList = new ArrayList<>();
+        // List<Integer> newHighlightList = new ArrayList<>();
+        highlightCache.clear();
 
-        // === 最大ノート番号を pdfRanges から取得 ===
-        int totalNotes = pdfRanges.stream()
-                .mapToInt(pr -> pr.endNoteIdx)
-                .max()
-                .orElse(0) + 1;
+        // === 小節数 ===
+        int totalMeasures = pdfRanges.size();
+        int hideMeasureCount = (int) Math.round(totalMeasures * rate);
 
-        int hideCount = (int) (totalNotes * rate);
+        // 小節インデックスをシャッフル
+        List<Integer> measureIndexes = new ArrayList<>();
+        for (int i = 0; i < totalMeasures; i++) {
+            measureIndexes.add(i);
+        }
+        java.util.Collections.shuffle(measureIndexes);
 
-        List<Integer> allIndexes = new ArrayList<>();
-        for (int i = 0; i < totalNotes; i++) {
-            allIndexes.add(i);
+        // 隠す小節を選ぶ
+        for (int i = 0; i < hideMeasureCount; i++) {
+            PdfRange pr = pdfRanges.get(measureIndexes.get(i));
+
+            // その小節に含まれるノートをすべて隠す
+            for (int noteIdx = pr.startNoteIdx; noteIdx <= pr.endNoteIdx; noteIdx++) {
+                highlightCache.add(noteIdx);
+            }
         }
 
-        java.util.Collections.shuffle(allIndexes);
-
-        for (int i = 0; i < hideCount; i++) {
-            newHighlightList.add(allIndexes.get(i));
-        }
-
-        setHighlightIndexes(newHighlightList);
+        setHighlightIndexes(highlightCache);
     }
+
+    //// カラーバーを隠す割合を設定して更新
+    // void updateHighlightByRate(double rate) {
+    //
+    // List<Integer> newHighlightList = new ArrayList<>();
+    //
+    // // === 最大ノート番号を pdfRanges から取得 ===
+    // int totalNotes = pdfRanges.stream()
+    // .mapToInt(pr -> pr.endNoteIdx)
+    // .max()
+    // .orElse(0) + 1;
+    //
+    // int hideCount = (int) (totalNotes * rate);
+    //
+    // List<Integer> allIndexes = new ArrayList<>();
+    // for (int i = 0; i < totalNotes; i++) {
+    // allIndexes.add(i);
+    // }
+    //
+    // java.util.Collections.shuffle(allIndexes);
+    //
+    // for (int i = 0; i < hideCount; i++) {
+    // newHighlightList.add(allIndexes.get(i));
+    // }
+    //
+    // setHighlightIndexes(newHighlightList);
+    // }
 
     List<PdfRange> pdfRanges = new ArrayList<>();
 
