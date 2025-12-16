@@ -19,6 +19,23 @@ import processing.core.PImage;
 public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
     List<MutableNote> imageNotes = new java.util.ArrayList<>();
 
+    private final List<PdfDisplay> pdfToDrawFront = new ArrayList<>();
+    private final List<Float> pdfYFront = new ArrayList<>();
+
+    @Override
+    public void draw() {
+        background(255);
+
+        drawTimeline();
+        drawNote();
+        drawPlayhead();
+        drawPdfGuideLines();
+        drawKeyboard();
+        drawCurrentNote();
+
+        drawPdfFront(); // ← PDFだけ前面
+    }
+
     /** 複数PDF × 各PDF縦10分割 */
     private PImage[][] pdfSlicesList;
 
@@ -170,8 +187,32 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
         image(img, 0, 0, drawW, drawH);
     }
 
+    private void drawPdfFront() {
+        for (int i = 0; i < pdfToDrawFront.size(); i++) {
+            PdfDisplay pd = pdfToDrawFront.get(i);
+            float y = pdfYFront.get(i);
+            // line(0, y, width, y);
+            drawSliceAtY(pd.pdfIndex, pd.sliceIndex, y, 0.51f);
+        }
+    }
+
+    void drawPdfGuideLines() {
+        pushStyle();
+        stroke(80);
+        strokeWeight(1);
+
+        for (int i = 0; i < pdfYFront.size(); i++) {
+            float y = pdfYFront.get(i);
+            line(0, y, width, y);
+        }
+
+        popStyle();
+    }
+
     @Override
     public void drawNote() {
+        pdfToDrawFront.clear();
+        pdfYFront.clear();
         if (isNoteVisible && (dataModel != null)) {
             super.drawNote();
             PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
@@ -218,6 +259,28 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                                     imageNote -> imageNote.onset() == note.onset() &&
                                             imageNote.offset() == note.offset() &&
                                             imageNote.notenum() == note.notenum());
+
+                            // if (highlightIndexes.contains(noteIndex)) {
+                            // // 横全域にバーを描画
+                            // noStroke();
+                            // fill(200, 255);
+                            // this.rect(0, y, width, h);
+                            //
+                            // fill(128);
+                            // textSize(32);
+                            // textAlign(CENTER, CENTER);
+                            // text("?", width / 2f, y + h / 2f);
+                            // }
+
+                            //// ノート描画ループ内で
+                            // if (pdfRule != null) {
+                            // PdfDisplay pd = pdfRule.apply(noteIndex);
+                            // if (pd != null && pd.pdfIndex >= 0 && pd.sliceIndex >= 0) {
+                            // pdfToDraw.add(pd);
+                            // pdfY.add(y + h);
+                            // pdfH.add(h);
+                            // }
+                            // }
                             if (isImageNote) {
                                 String path = getClass().getClassLoader().getResource(note.notenum() + ".png")
                                         .getPath();
@@ -324,7 +387,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                                 this.rect(0, y, width, h);
 
                                 fill(128);
-                                textSize(32); 
+                                textSize(32);
                                 textAlign(CENTER, CENTER);
                                 text("?", width / 2f, y + h / 2f);
                             }
@@ -333,20 +396,22 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                             if (pdfRule != null) {
                                 PdfDisplay pd = pdfRule.apply(noteIndex);
                                 if (pd != null && pd.pdfIndex >= 0 && pd.sliceIndex >= 0) {
-                                    pdfToDraw.add(pd);
-                                    pdfY.add(y + h);
-                                    pdfH.add(h);
+                                    // pdfToDraw.add(pd);
+                                    // pdfY.add(y + h);
+                                    // pdfH.add(h);
+                                    pdfToDrawFront.add(pd);
+                                    pdfYFront.add(y + h);
                                 }
                             }
                             noteIndex++;
                         }
-                        for (int i = 0; i < pdfToDraw.size(); i++) {
-                            PdfDisplay pd = pdfToDraw.get(i);
-                            stroke(80);
-                            strokeWeight(1);
-                            line(0, pdfY.get(i), width, pdfY.get(i));
-                            drawSliceAtY(pd.pdfIndex, pd.sliceIndex, pdfY.get(i), 0.51f);
-                        }
+                        // for (int i = 0; i < pdfToDraw.size(); i++) {
+                        //// PdfDisplay pd = pdfToDraw.get(i);
+                        //// stroke(80);
+                        //// strokeWeight(1);
+                        // line(0, pdfYFront.get(i), width, pdfYFront.get(i));
+                        //// drawSliceAtY(pd.pdfIndex, pd.sliceIndex, pdfY.get(i), 0.51f);
+                        // }
                     }
                     blendMode(MULTIPLY);
                 });
