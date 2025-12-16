@@ -45,24 +45,24 @@ public class MidiRecorder {
 
     public void reset() {
         try {
-        sequence = new Sequence(Sequence.PPQ, PPQ);
-        track = sequence.createTrack();
-        startTimeMillis = System.currentTimeMillis();
+            sequence = new Sequence(Sequence.PPQ, PPQ);
+            track = sequence.createTrack();
+            startTimeMillis = System.currentTimeMillis();
 
-        // テンポ再設定
-        MetaMessage tempo = new MetaMessage();
-        int mpq = 500000; // 120 BPM
-        byte[] data = {
-            (byte)((mpq >> 16) & 0xFF),
-            (byte)((mpq >> 8) & 0xFF),
-            (byte)(mpq & 0xFF)
-        };
-        tempo.setMessage(0x51, data, 3);
-        track.add(new MidiEvent(tempo, 0));
+            // テンポ再設定
+            MetaMessage tempo = new MetaMessage();
+            int mpq = 500000; // 120 BPM
+            byte[] data = {
+                    (byte) ((mpq >> 16) & 0xFF),
+                    (byte) ((mpq >> 8) & 0xFF),
+                    (byte) (mpq & 0xFF)
+            };
+            tempo.setMessage(0x51, data, 3);
+            track.add(new MidiEvent(tempo, 0));
 
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void record(byte[] msg) {

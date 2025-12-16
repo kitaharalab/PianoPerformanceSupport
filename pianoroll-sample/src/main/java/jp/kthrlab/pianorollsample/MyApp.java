@@ -35,7 +35,7 @@ public class MyApp extends ImageNotePianoRoll {
     double currentHideRate = 0.0; // 現在の非表示率
     boolean loopJustReset = false; // 先頭に戻った瞬間フラグ
 
-    int subjectId = 111; // 被験者番号を指定
+    int subjectId = 118; // 被験者番号を指定
     int takeCount = 0; // 保存番号の始まり（連番）
 
     private Transmitter midiTransmitter;
@@ -68,8 +68,8 @@ public class MyApp extends ImageNotePianoRoll {
 
         // midiを指定 曲
         musicData = new MusicData(
-                // "kirakira2.mid",
-                "ex1.mid",
+                "kirakira2.mid",
+                // "ex1.mid",
                 // "ex2.mid",
                 // "ex3.mid",
                 // "ex4.mid",
@@ -125,33 +125,33 @@ public class MyApp extends ImageNotePianoRoll {
 
         // pdfを指定 曲
         String[] pdfs = {
-                //// kirakira
-                // "/kirakira_0to3.pdf",
-                // "/kirakira_4to6.pdf",
-                // "/kirakira_7to10.pdf",
-                // "/kirakira_11to13.pdf"
+                // kirakira
+                "/kirakira_0to3.pdf",
+                "/kirakira_4to6.pdf",
+                "/kirakira_7to10.pdf",
+                "/kirakira_11to13.pdf"
 
-                // ex1
-                "/ex1_0to5.pdf",
-                "/ex1_6to8.pdf",
-                "/ex1_9to12.pdf",
-                "/ex1_13to15.pdf",
-                "/ex1_16to21.pdf",
-                "/ex1_22to24.pdf",
-                "/ex1_25to29.pdf",
-                "/ex1_30to31.pdf",
-                "/ex1_32to37.pdf",
-                "/ex1_38to40.pdf",
-                "/ex1_41to46.pdf",
-                "/ex1_47to49.pdf",
-                "/ex1_50to53.pdf",
-                "/ex1_54to57.pdf",
-                "/ex1_58to61.pdf",
-                "/ex1_62to65.pdf",
-                "/ex1_66.pdf",
-                "/ex1_67.pdf",
-                "/ex1_68to71.pdf",
-                "/ex1_72to74.pdf"
+                //// ex1
+                // "/ex1_0to5.pdf",
+                // "/ex1_6to8.pdf",
+                // "/ex1_9to12.pdf",
+                // "/ex1_13to15.pdf",
+                // "/ex1_16to21.pdf",
+                // "/ex1_22to24.pdf",
+                // "/ex1_25to29.pdf",
+                // "/ex1_30to31.pdf",
+                // "/ex1_32to37.pdf",
+                // "/ex1_38to40.pdf",
+                // "/ex1_41to46.pdf",
+                // "/ex1_47to49.pdf",
+                // "/ex1_50to53.pdf",
+                // "/ex1_54to57.pdf",
+                // "/ex1_58to61.pdf",
+                // "/ex1_62to65.pdf",
+                // "/ex1_66.pdf",
+                // "/ex1_67.pdf",
+                // "/ex1_68to71.pdf",
+                // "/ex1_72to74.pdf"
 
                 //// ex2
                 // "/ex2_0to4.pdf",
@@ -192,11 +192,6 @@ public class MyApp extends ImageNotePianoRoll {
                 // "/ex3_49to51.pdf",
                 // "/ex3_52to57.pdf",
                 // "/ex3_58.pdf"
-
-                // "/ex3_58to61.pdf",
-                // "/ex3_62to65.pdf",
-                // "/ex3_66to70.pdf",
-                // "/ex3_71.pdf"
 
                 //// ex4
                 // "/ex4_0to5.pdf",
@@ -272,19 +267,19 @@ public class MyApp extends ImageNotePianoRoll {
         List<int[]> allSongs = new ArrayList<>();
 
         // 1小節分の音数を指定 曲
-        //// kirakira
-        // allSongs.add(new int[] {
-        // 4, 3, 4, 3
-        // });
-
-        // ex1
+        // kirakira
         allSongs.add(new int[] {
-                6, 3, 4, 3,
-                6, 3, 5, 2,
-                6, 3, 6, 3,
-                4, 4, 4, 4,
-                1, 1, 4, 3
+            4, 3, 4, 3
         });
+
+        //// ex1
+        // allSongs.add(new int[] {
+        // 6, 3, 4, 3,
+        // 6, 3, 5, 2,
+        // 6, 3, 6, 3,
+        // 4, 4, 4, 4,
+        // 1, 1, 4, 3
+        // });
 
         //// ex2
         // allSongs.add(new int[] {
@@ -321,7 +316,7 @@ public class MyApp extends ImageNotePianoRoll {
         // 6, 4, 8, 2
         // });
 
-        //// ex6
+        //// ex6 !!!!!!!!!!!!!!!!!!ImageNotePianoRollの分割数を11に変える!!!!!!!!!!!!!!!!!!!!
         // allSongs.add(new int[] {
         // 4, 3, 3, 1,
         // 4, 3, 4, 2,
@@ -331,21 +326,21 @@ public class MyApp extends ImageNotePianoRoll {
 
         setupPdfRanges(pdfRanges, allSongs);
 
-        // pdfを表示するかどうかを指定 システム2で使用
-        setPdfDisplayRule(noteIdx -> {
-
-            // if (noteIdx < songStart || noteIdx > songEnd) {
-            // return null;
-            // }
-
-            for (PdfRange pr : pdfRanges) {
-                if (pr.startNoteIdx == noteIdx) {
-                    return new ImageNotePianoRoll.PdfDisplay(pr.pdfIndex, 1);
-                }
-            }
-
-            return null;
-        });
+        //// pdfを表示するかどうかを指定 システム2で使用
+        //setPdfDisplayRule(noteIdx -> {
+//
+        //    // if (noteIdx < songStart || noteIdx > songEnd) {
+        //    // return null;
+        //    // }
+//
+        //    for (PdfRange pr : pdfRanges) {
+        //        if (pr.startNoteIdx == noteIdx) {
+        //            return new ImageNotePianoRoll.PdfDisplay(pr.pdfIndex, 1);
+        //        }
+        //    }
+//
+        //    return null;
+        //});
 
         // List<Integer> highlightList = new ArrayList<>();
         // double highlightRate = 0.3; // カラーバーを隠す割合
@@ -415,15 +410,15 @@ public class MyApp extends ImageNotePianoRoll {
             }
         }
 
-        // カラーバーを隠すかどうかを指定 システム2で使用
-        if (loopJustReset) {
-            loopJustReset = false;
-
-            loopCount++;
-            currentHideRate = Math.min(1.0, loopCount * hideStep);
-
-            updateHighlightByRate(currentHideRate);
-        }
+        //// カラーバーを隠すかどうかを指定 システム2で使用
+        //if (loopJustReset) {
+        //    loopJustReset = false;
+//
+        //    loopCount++;
+        //    currentHideRate = Math.min(1.0, loopCount * hideStep);
+//
+        //    updateHighlightByRate(currentHideRate);
+        //}
 
     }
 
@@ -631,7 +626,9 @@ public class MyApp extends ImageNotePianoRoll {
             midiRecorder.save(filename);
             takeCount++;
 
+            // cmx.setTickPosition(0);
             midiRecorder.reset();
+            // midiRecorder.reset();
         }
     }
 }

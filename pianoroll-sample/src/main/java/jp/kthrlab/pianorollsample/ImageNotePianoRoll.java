@@ -32,7 +32,6 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
         drawPdfGuideLines();
         drawKeyboard();
         drawCurrentNote();
-
         drawPdfFront(); // ← PDFだけ前面
     }
 
@@ -71,7 +70,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                 int w = bi.getWidth();
                 int h = bi.getHeight();
 
-                int sliceHeight = h / 10;
+                int sliceHeight = h / 10; //分割数　ex6用に11に変更
 
                 for (int i = 0; i < 10; i++) {
                     int y = i * sliceHeight;
@@ -193,6 +192,9 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
             float y = pdfYFront.get(i);
             // line(0, y, width, y);
             drawSliceAtY(pd.pdfIndex, pd.sliceIndex, y, 0.51f);
+            stroke(80);
+            strokeWeight(1);
+            line(0, y, width / 3 + 86, y);
         }
     }
 
