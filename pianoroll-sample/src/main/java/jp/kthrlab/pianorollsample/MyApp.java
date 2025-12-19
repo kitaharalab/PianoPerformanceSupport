@@ -75,7 +75,7 @@ public class MyApp extends ImageNotePianoRoll {
                 // !!!!!!!!!!!!!!!!!!!!!!!
                 // "ex4.mid",
                 // "ex5.mid",
-                // "ex6.mid",
+                //"ex6.mid",
                 // "test.mid",
 
                 // "ex1_0to8-midi.mid",
@@ -127,10 +127,10 @@ public class MyApp extends ImageNotePianoRoll {
         // pdfを指定 曲
         String[] pdfs = {
                 // kirakira
-                "/kirakira_0to3.pdf",
-                "/kirakira_4to6.pdf",
-                "/kirakira_7to10.pdf",
-                "/kirakira_11to13.pdf"
+                 "/kirakira_0to3.pdf",
+                 "/kirakira_4to6.pdf",
+                 "/kirakira_7to10.pdf",
+                 "/kirakira_11to13.pdf"
 
                 //// ex1
                 // "/ex1_0to5.pdf",
@@ -239,22 +239,22 @@ public class MyApp extends ImageNotePianoRoll {
                 // "/ex5_75to76.pdf"
 
                 //// ex6
-                // "/ex6_0to3.pdf",
-                // "/ex6_4to6.pdf",
-                // "/ex6_7to9.pdf",
-                // "/ex6_10.pdf",
-                // "/ex6_11to14.pdf",
-                // "/ex6_15to17.pdf",
-                // "/ex6_18to21.pdf",
-                // "/ex6_22to23.pdf",
-                // "/ex6_24to28.pdf",
-                // "/ex6_29to31.pdf",
-                // "/ex6_32to36.pdf",
-                // "/ex6_37to39.pdf",
-                // "/ex6_40to44.pdf",
-                // "/ex6_45to50.pdf",
-                // "/ex6_51to54.pdf",
-                // "/ex6_55to57.pdf"
+                //"/ex6_0to3.pdf",
+                //"/ex6_4to6.pdf",
+                //"/ex6_7to9.pdf",
+                //"/ex6_10.pdf",
+                //"/ex6_11to14.pdf",
+                //"/ex6_15to17.pdf",
+                //"/ex6_18to21.pdf",
+                //"/ex6_22to23.pdf",
+                //"/ex6_24to28.pdf",
+                //"/ex6_29to31.pdf",
+                //"/ex6_32to36.pdf",
+                //"/ex6_37to39.pdf",
+                //"/ex6_40to44.pdf",
+                //"/ex6_45to50.pdf",
+                //"/ex6_51to54.pdf",
+                //"/ex6_55to57.pdf"
 
                 // "/kirakira2_first2-midi.pdf",
                 // "/kirakira2_first4-midi.pdf",
