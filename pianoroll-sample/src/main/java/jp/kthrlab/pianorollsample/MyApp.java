@@ -68,10 +68,10 @@ public class MyApp extends ImageNotePianoRoll {
 
         // midiを指定 曲
         musicData = new MusicData(
-                "kirakira2.mid",
-                // "ex1.mid",
-                // "ex2.mid",
-                // "ex3.mid",
+                //"kirakira2.mid",
+                //"ex1.mid",
+                //"ex2.mid",
+                "ex3.mid",
                 // !!!!!!!!!!!!!!!!!!!!!!!
                 // "ex4.mid",
                 // "ex5.mid",
