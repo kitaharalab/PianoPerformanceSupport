@@ -35,8 +35,8 @@ public class MyApp extends ImageNotePianoRoll {
     double currentHideRate = 0.0; // 現在の非表示率
     boolean loopJustReset = false; // 先頭に戻った瞬間フラグ
 
-    int subjectId = 8; // 被験者番号を指定
-    int takeCount = 0; // 保存番号の始まり（連番）
+    int subjectId = 2; // 被験者番号を指定
+    int takeCount = 16; // 保存番号の始まり（連番）
 
     private Transmitter midiTransmitter;
 
@@ -329,21 +329,21 @@ public class MyApp extends ImageNotePianoRoll {
 
         setupPdfRanges(pdfRanges, allSongs);
 
-        // pdfを表示するかどうかを指定 システム2で使用
-        setPdfDisplayRule(noteIdx -> {
-
-            // if (noteIdx < songStart || noteIdx > songEnd) {
-            // return null;
-            // }
-
-            for (PdfRange pr : pdfRanges) {
-                if (pr.startNoteIdx == noteIdx) {
-                    return new ImageNotePianoRoll.PdfDisplay(pr.pdfIndex, 1);
-                }
-            }
-
-            return null;
-        });
+        //// pdfを表示するかどうかを指定 システム2で使用
+        //setPdfDisplayRule(noteIdx -> {
+//
+        //    // if (noteIdx < songStart || noteIdx > songEnd) {
+        //    // return null;
+        //    // }
+//
+        //    for (PdfRange pr : pdfRanges) {
+        //        if (pr.startNoteIdx == noteIdx) {
+        //            return new ImageNotePianoRoll.PdfDisplay(pr.pdfIndex, 1);
+        //        }
+        //    }
+//
+        //    return null;
+        //});
 
         // List<Integer> highlightList = new ArrayList<>();
         // double highlightRate = 0.3; // カラーバーを隠す割合
@@ -413,15 +413,15 @@ public class MyApp extends ImageNotePianoRoll {
             }
         }
 
-        // カラーバーを隠すかどうかを指定 システム2で使用
-        if (loopJustReset) {
-            loopJustReset = false;
-
-            loopCount++;
-            currentHideRate = Math.min(1.0, loopCount * hideStep);
-
-            updateHighlightByRate(currentHideRate);
-        }
+        //// カラーバーを隠すかどうかを指定 システム2で使用
+        //if (loopJustReset) {
+        //    loopJustReset = false;
+//
+        //    loopCount++;
+        //    currentHideRate = Math.min(1.0, loopCount * hideStep);
+//
+        //    updateHighlightByRate(currentHideRate);
+        //}
 
     }
 
