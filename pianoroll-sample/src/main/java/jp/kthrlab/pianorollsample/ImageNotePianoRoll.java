@@ -70,7 +70,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                 int w = bi.getWidth();
                 int h = bi.getHeight();
 
-                int sliceHeight = h / 10; //分割数　ex6用に11に変更
+                int sliceHeight = h / 11; //分割数　ex6用に11に変更
 
                 for (int i = 0; i < 10; i++) {
                     int y = i * sliceHeight;
