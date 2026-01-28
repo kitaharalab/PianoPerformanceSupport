@@ -27,7 +27,6 @@ public class ReceiverModule extends SPModule {
 
     public static void setTickPosition(long tick) {
         currentTickPosition = tick;
-        // System.out.println("Tick position set to: " + currentTickPosition);
     }
 
     public static boolean isStopRequested() {
@@ -45,11 +44,9 @@ public class ReceiverModule extends SPModule {
 
     @Override
     public void execute(Object[] objects, TimeSeriesCompatible[] tsc) throws InterruptedException {
-        // System.out.println("execute called");
         MidiEventWithTicktime midievt = (MidiEventWithTicktime) objects[0];
         byte[] msg = midievt.getMessageInByteArray();
         long currentTick = currentTickPosition;
-        // System.out.println(currentTick);
 
         midiRecorder.record(msg);
 
@@ -65,17 +62,13 @@ public class ReceiverModule extends SPModule {
 
             if (isCorrect) {
                 // 正解ノートなら再生再開
-                // System.out.println("isCorrect");
                 lastCorrectOnset = currentTick;
                 requestStop(false); // 停止フラグ解除
                 cmx.playMusic();
-                // System.out.println("ReceicerModule playmusic");
             } else {
                 // 不正ノートなら停止
-                // System.out.println("!isCorrect");
                 requestStop(true); // 停止フラグセット
                 cmx.stopMusic();
-                // System.out.println("ReceicerModule stopmusic");
             }
         }
         // NOTE OFF

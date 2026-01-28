@@ -10,8 +10,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import jp.crestmuse.cmx.elements.MutableNote;
 import jp.crestmuse.cmx.filewrappers.SCCDataSet;
 
-//2つ以上の正解ノートがある場合は変更する必要がある
-
 public class PerformanceData {
     private LinkedHashMap<Byte, LinkedHashMap<Long, List<MutableNote>>> notesToPlay;
     private SCCDataSet sccDataSet;
@@ -46,7 +44,6 @@ public class PerformanceData {
     }
 
     public void performed(byte note) {
-        //                .takeWhile(entry -> !result.get())
         // notesToPlayの中から、最初に見つかった「notenumが一致するノート」を削除
         // そのtickやチャンネルにノートがなくなったら、キーごと削除
         for (Map.Entry<Byte, LinkedHashMap<Long, List<MutableNote>>> entry : notesToPlay.entrySet()) {
@@ -74,7 +71,6 @@ public class PerformanceData {
                 break;
             }
             Map.Entry<Long, List<MutableNote>> firstEntry = entry.getValue().entrySet().iterator().next();
-            //System.out.println("firstEntry.getKey()=" + firstEntry.getKey());
             result.set(firstEntry.getKey().equals(tickPosition) || tickPosition > firstEntry.getKey());
         }
         return result.get();

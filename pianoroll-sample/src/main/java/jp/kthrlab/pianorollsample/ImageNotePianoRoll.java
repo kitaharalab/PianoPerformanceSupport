@@ -32,7 +32,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
         drawPdfGuideLines();
         drawKeyboard();
         drawCurrentNote();
-        drawPdfFront(); // ← PDFだけ前面
+        drawPdfFront();
     }
 
     /** 複数PDF × 各PDF縦10分割 */
@@ -57,7 +57,6 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
 
         try (var in = getClass().getResourceAsStream(pdfResource)) {
             if (in == null) {
-                // System.out.println("PDF not found: " + pdfResource);
                 return slices;
             }
 
@@ -70,7 +69,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                 int w = bi.getWidth();
                 int h = bi.getHeight();
 
-                int sliceHeight = h / 10; //分割数　ex6用に11に変更
+                int sliceHeight = h / 10; //分割数
 
                 for (int i = 0; i < 10; i++) {
                     int y = i * sliceHeight;
@@ -190,7 +189,6 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
         for (int i = 0; i < pdfToDrawFront.size(); i++) {
             PdfDisplay pd = pdfToDrawFront.get(i);
             float y = pdfYFront.get(i);
-            // line(0, y, width, y);
             drawSliceAtY(pd.pdfIndex, pd.sliceIndex, y, 0.51f);
             stroke(80);
             strokeWeight(1);
@@ -240,15 +238,12 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                                     * dataModelMultiChannel.getPixelPerTick());
                             float y = timeline.getSpan()
                                     - (float) (relativeOnset * dataModelMultiChannel.getPixelPerTick()) - h;
-                            // Break if it is outside the drawing range
+
                             if (y < 0) {
                                 break;
                             }
                             float x = horizontalKeyboard.semitoneXMap.get(note.notenum());
                             float w = timeline.getSemitoneWidth();
-                            // println(String.format("tickPosition=%s, note.onset()=%s, relativeOnset=%s,
-                            // x=%s, y=%s, w=%s, h=%s",tickPosition, note.onset(), relativeOnset, x, y, w,
-                            // h));
 
                             int measure = (int) (note.onset() / dataModelMultiChannel.getScc().getDivision()
                                     / dataModelMultiChannel.getBeatNum());
@@ -262,27 +257,6 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                                             imageNote.offset() == note.offset() &&
                                             imageNote.notenum() == note.notenum());
 
-                            // if (highlightIndexes.contains(noteIndex)) {
-                            // // 横全域にバーを描画
-                            // noStroke();
-                            // fill(200, 255);
-                            // this.rect(0, y, width, h);
-                            //
-                            // fill(128);
-                            // textSize(32);
-                            // textAlign(CENTER, CENTER);
-                            // text("?", width / 2f, y + h / 2f);
-                            // }
-
-                            //// ノート描画ループ内で
-                            // if (pdfRule != null) {
-                            // PdfDisplay pd = pdfRule.apply(noteIndex);
-                            // if (pd != null && pd.pdfIndex >= 0 && pd.sliceIndex >= 0) {
-                            // pdfToDraw.add(pd);
-                            // pdfY.add(y + h);
-                            // pdfH.add(h);
-                            // }
-                            // }
                             if (isImageNote) {
                                 String path = getClass().getClassLoader().getResource(note.notenum() + ".png")
                                         .getPath();
@@ -295,92 +269,6 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                                 fill(channel.color.getRGB());
                                 stroke(Color.LIGHT_GRAY.getRGB());
                                 this.rect(x, y, w, h);
-
-                                //// ノートによって色を変更
-                                // int noteInOctave = note.notenum() % 12;
-                                // int fillColor;
-                                //
-                                // switch (noteInOctave) {
-                                // case 0: // C
-                                // fillColor = Color.RED.getRGB();
-                                // break;
-                                // case 2: // D
-                                // fillColor = Color.ORANGE.getRGB();
-                                // break;
-                                // case 4: // E
-                                // fillColor = Color.YELLOW.getRGB();
-                                // break;
-                                // case 5: // F
-                                // fillColor = Color.GREEN.getRGB();
-                                // break;
-                                // case 7: // G
-                                // fillColor = new Color(135, 206, 235).getRGB();// 水色
-                                // break;
-                                // case 9: // A
-                                // fillColor = Color.BLUE.getRGB();
-                                // break;
-                                // case 11: // B
-                                // fillColor = new Color(128, 0, 128).getRGB(); // 紫
-                                // break;
-                                // default:
-                                // fillColor = channel.color.getRGB(); // 黒鍵などは元の色
-                                // break;
-                                // }
-                                //
-                                // fill(fillColor);
-                                // stroke(Color.LIGHT_GRAY.getRGB());
-                                // this.rect(x, y, w, h);
-
-                                //// ノートによって色を変更（オクターブによって彩度を変える）
-                                // int noteInOctave = note.notenum() % 12;
-                                // int baseColor;
-                                //
-                                // switch (noteInOctave) {
-                                // case 0: // C
-                                // baseColor = Color.RED.getRGB();
-                                // break;
-                                // case 2: // D
-                                // baseColor = Color.ORANGE.getRGB();
-                                // break;
-                                // case 4: // E
-                                // baseColor = Color.YELLOW.getRGB();
-                                // break;
-                                // case 5: // F
-                                // baseColor = Color.GREEN.getRGB();
-                                // break;
-                                // case 7: // G
-                                // baseColor = new Color(135, 206, 235).getRGB();// 水色
-                                // break;
-                                // case 9: // A
-                                // baseColor = Color.BLUE.getRGB();
-                                // break;
-                                // case 11: // B
-                                // baseColor = new Color(128, 0, 128).getRGB(); // 紫
-                                // break;
-                                // default:
-                                // baseColor = channel.color.getRGB(); // 黒鍵などは元の色
-                                // break;
-                                // }
-                                //
-                                //// オクターブ番号を取得
-                                // int octave = note.notenum() / 12;
-                                //
-                                //// RGB → HSB変換
-                                // float[] hsb = Color.RGBtoHSB(
-                                // (baseColor >> 16) & 0xFF,
-                                // (baseColor >> 8) & 0xFF,
-                                // (baseColor) & 0xFF,
-                                // null);
-                                //
-                                //// 彩度をオクターブごとに変化させる
-                                //// 例: オクターブが高いほど彩度を下げる（0.2〜1.0の範囲）
-                                // float saturation = Math.max(0.2f, 1.0f - (octave * 0.1f));
-                                // int adjustedColor = Color.HSBtoRGB(hsb[0], saturation, hsb[2]);
-                                //
-                                // fill(adjustedColor);
-                                // stroke(Color.LIGHT_GRAY.getRGB());
-                                // this.rect(x, y, w, h);
-
                             }
                             if (highlightIndexes.contains(noteIndex)) {
                                 // 横全域にバーを描画
@@ -398,22 +286,12 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                             if (pdfRule != null) {
                                 PdfDisplay pd = pdfRule.apply(noteIndex);
                                 if (pd != null && pd.pdfIndex >= 0 && pd.sliceIndex >= 0) {
-                                    // pdfToDraw.add(pd);
-                                    // pdfY.add(y + h);
-                                    // pdfH.add(h);
                                     pdfToDrawFront.add(pd);
                                     pdfYFront.add(y + h);
                                 }
                             }
                             noteIndex++;
                         }
-                        // for (int i = 0; i < pdfToDraw.size(); i++) {
-                        //// PdfDisplay pd = pdfToDraw.get(i);
-                        //// stroke(80);
-                        //// strokeWeight(1);
-                        // line(0, pdfYFront.get(i), width, pdfYFront.get(i));
-                        //// drawSliceAtY(pd.pdfIndex, pd.sliceIndex, pdfY.get(i), 0.51f);
-                        // }
                     }
                     blendMode(MULTIPLY);
                 });

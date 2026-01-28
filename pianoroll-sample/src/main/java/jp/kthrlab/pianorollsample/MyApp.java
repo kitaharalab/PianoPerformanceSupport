@@ -31,12 +31,12 @@ public class MyApp extends ImageNotePianoRoll {
     private MidiRecorder midiRecorder;
 
     int loopCount = 0; // 何周目か
-    double hideStep = 0.1; // 1周ごとに増やす割合 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    double hideStep = 0.2; // 1周ごとに増やす割合
     double currentHideRate = 0.0; // 現在の非表示率
     boolean loopJustReset = false; // 先頭に戻った瞬間フラグ
 
-    int subjectId = 6; // 被験者番号を指定
-    int takeCount = 16; // 保存番号の始まり（連番）
+    int subjectId = 100; // 被験者番号を指定
+    int takeCount = 0; // 保存番号の始まり（連番）
 
     private Transmitter midiTransmitter;
 
@@ -68,17 +68,14 @@ public class MyApp extends ImageNotePianoRoll {
 
         // midiを指定 曲
         musicData = new MusicData(
-                //"kirakira2.mid",
+                "kirakira2.mid",
                 // "ex1.mid",
                 // "ex2.mid",
                 // "ex3.mid",
-                // !!!!!!!!!!!!!!!!!!!!!!!
-                //"ex4.mid",
-                //"ex5.mid",
-                "ex6.mid",
+                // "ex4.mid",
+                // "ex5.mid",
+                // "ex6.mid",
                 // "test.mid",
-
-                // "ex1_0to8-midi.mid",
 
                 timeline.getSpan().intValue(),
                 0,
@@ -255,12 +252,6 @@ public class MyApp extends ImageNotePianoRoll {
                 // "/ex6_45to50.pdf",
                 // "/ex6_51to54.pdf",
                 // "/ex6_55to57.pdf"
-
-                // "/kirakira2_first2-midi.pdf",
-                // "/kirakira2_first4-midi.pdf",
-                // "/kirakira2_first8-midi.pdf",
-                // "/kirakira2_5_7-midi.pdf",
-                // "/ex1.pdf",
         };
 
         loadMultiplePdfSlices(pdfs);
@@ -293,14 +284,13 @@ public class MyApp extends ImageNotePianoRoll {
         // });
 
         //// ex3
-        //allSongs.add(new int[] {
-        //        3, 3, 6, 1,
-        //        3, 3, 6, 2,
-        //        6, 6, 6, 1,
-        //        3, 3, 6, 1
-        //});
+        // allSongs.add(new int[] {
+        // 3, 3, 6, 1,
+        // 3, 3, 6, 2,
+        // 6, 6, 6, 1,
+        // 3, 3, 6, 1
+        // });
 
-        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //// ex4
         // allSongs.add(new int[] {
         // 6, 3, 5, 2,
@@ -319,7 +309,7 @@ public class MyApp extends ImageNotePianoRoll {
         // 6, 4, 8, 2
         // });
 
-        //// ex6 !!!!!!!!!!!!!!!!!!ImageNotePianoRollの分割数を11に変える!!!!!!!!!!!!!!!!!!!!
+        //// ex6
         // allSongs.add(new int[] {
         // 4, 3, 3, 1,
         // 4, 3, 4, 2,
@@ -329,36 +319,16 @@ public class MyApp extends ImageNotePianoRoll {
 
         setupPdfRanges(pdfRanges, allSongs);
 
-        //// pdfを表示するかどうかを指定 システム2で使用
-        //setPdfDisplayRule(noteIdx -> {
-//
-        //    // if (noteIdx < songStart || noteIdx > songEnd) {
-        //    // return null;
-        //    // }
-//
-        //    for (PdfRange pr : pdfRanges) {
-        //        if (pr.startNoteIdx == noteIdx) {
-        //            return new ImageNotePianoRoll.PdfDisplay(pr.pdfIndex, 1);
-        //        }
-        //    }
-//
-        //    return null;
-        //});
+        // pdfを表示するかどうかを指定 システム2で使用
+        setPdfDisplayRule(noteIdx -> {
+            for (PdfRange pr : pdfRanges) {
+                if (pr.startNoteIdx == noteIdx) {
+                    return new ImageNotePianoRoll.PdfDisplay(pr.pdfIndex, 1);
+                }
+            }
 
-        // List<Integer> highlightList = new ArrayList<>();
-        // double highlightRate = 0.3; // カラーバーを隠す割合
-        //
-        // for (PdfRange pr : pdfRanges) {
-        // if (Math.random() < highlightRate) {
-        // for (int i = pr.startNoteIdx; i <= pr.endNoteIdx; i++) {
-        // highlightList.add(i);
-        // }
-        // }
-        // }
-        //
-        //// 以下はシステム1ではコメントアウト
-        //// カラーバーを隠すかどうか
-        // setHighlightIndexes(highlightList);
+            return null;
+        });
     }
 
     @Override
@@ -366,14 +336,11 @@ public class MyApp extends ImageNotePianoRoll {
         super.draw();
 
         long tickPosition = cmx.getTickPosition();
-        // ===== 周回検出 =====
         if (tickPosition < lastTickPosition) {
             loopJustReset = true;
         }
 
-        // tick に対応するノートがまだ演奏されていないかチェック
         LongStream.rangeClosed(lastTickPosition, tickPosition).forEach(tick -> {
-            // println(tick + " " + performanceData.hasNotesToPlay(tick));
             if (performanceData.hasNotesToPlay(tick)) {
                 stopMusic(); // ノートが残っていれば停止
             } else {
@@ -388,7 +355,6 @@ public class MyApp extends ImageNotePianoRoll {
 
         // === 停止時フラッシュ表示 ===
         if (flash) {
-
             if (millis() - flashStartTime < 120) {
 
                 pushStyle();
@@ -396,14 +362,8 @@ public class MyApp extends ImageNotePianoRoll {
                 fill(0, 120, 255, 150);
 
                 int thickness = 30;
-
-                // 上枠
                 rect(thickness, 0, width - thickness, thickness);
-
-                // 左枠
                 rect(0, 0, thickness, height - 105);
-
-                // 右枠
                 rect(width - thickness, thickness, thickness, height - 105 - thickness);
 
                 popStyle();
@@ -413,21 +373,19 @@ public class MyApp extends ImageNotePianoRoll {
             }
         }
 
-        //// カラーバーを隠すかどうかを指定 システム2で使用
-        //if (loopJustReset) {
-        //    loopJustReset = false;
-//
-        //    loopCount++;
-        //    currentHideRate = Math.min(1.0, loopCount * hideStep);
-//
-        //    updateHighlightByRate(currentHideRate);
-        //}
+        // カラーバーを隠すかどうかを指定 システム2で使用
+        if (loopJustReset) {
+            loopJustReset = false;
+
+            loopCount++;
+            currentHideRate = Math.min(1.0, loopCount * hideStep);
+
+            updateHighlightByRate(currentHideRate);
+        }
 
     }
 
     void updateHighlightByRate(double rate) {
-
-        // List<Integer> newHighlightList = new ArrayList<>();
         highlightCache.clear();
 
         // === 小節数 ===
@@ -453,33 +411,6 @@ public class MyApp extends ImageNotePianoRoll {
 
         setHighlightIndexes(highlightCache);
     }
-
-    //// カラーバーを隠す割合を設定して更新
-    // void updateHighlightByRate(double rate) {
-    //
-    // List<Integer> newHighlightList = new ArrayList<>();
-    //
-    // // === 最大ノート番号を pdfRanges から取得 ===
-    // int totalNotes = pdfRanges.stream()
-    // .mapToInt(pr -> pr.endNoteIdx)
-    // .max()
-    // .orElse(0) + 1;
-    //
-    // int hideCount = (int) (totalNotes * rate);
-    //
-    // List<Integer> allIndexes = new ArrayList<>();
-    // for (int i = 0; i < totalNotes; i++) {
-    // allIndexes.add(i);
-    // }
-    //
-    // java.util.Collections.shuffle(allIndexes);
-    //
-    // for (int i = 0; i < hideCount; i++) {
-    // newHighlightList.add(allIndexes.get(i));
-    // }
-    //
-    // setHighlightIndexes(newHighlightList);
-    // }
 
     List<PdfRange> pdfRanges = new ArrayList<>();
 
@@ -550,14 +481,6 @@ public class MyApp extends ImageNotePianoRoll {
             cmx.connect(receiver, 0, pianoTeacherModule, 0);
             cmx.connect(pianoTeacherModule, 0, mo, 0);
 
-            // cmx.addSPModule(mi);
-            // cmx.addSPModule(pianoTeacherModule);
-            // cmx.addSPModule(mo);
-            //
-            //// モジュール接続
-            // cmx.connect(mi, 0, pianoTeacherModule, 0);
-            // cmx.connect(pianoTeacherModule, 0, mo, 0); // OUT にも流す場合
-
             cmx.startSP();
 
         } catch (Exception e) {
@@ -568,12 +491,11 @@ public class MyApp extends ImageNotePianoRoll {
     private void hideDefaultTitleBar() {
         JFrame frame = (JFrame) ((processing.awt.PSurfaceAWT.SmoothCanvas) getSurface().getNative()).getFrame();
         frame.removeNotify();
-        frame.setUndecorated(true); // デフォルトのタイトルバーを隠す
+        frame.setUndecorated(true);
         frame.addNotify();
     }
 
     void startMusic() {
-        // System.out.println("startMusic");
         if (!cmx.isNowPlaying()) {
             cmx.playMusic();
         }
@@ -582,7 +504,6 @@ public class MyApp extends ImageNotePianoRoll {
     }
 
     void stopMusic() {
-        // System.out.println("stopMusic");
         if (cmx.isNowPlaying()) {
             cmx.stopMusic();
         }
@@ -629,9 +550,7 @@ public class MyApp extends ImageNotePianoRoll {
             midiRecorder.save(filename);
             takeCount++;
 
-            // cmx.setTickPosition(0);
             midiRecorder.reset();
-            // midiRecorder.reset();
         }
     }
 }
