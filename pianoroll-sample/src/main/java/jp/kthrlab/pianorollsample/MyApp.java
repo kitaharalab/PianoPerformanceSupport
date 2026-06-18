@@ -10,6 +10,7 @@ import java.util.stream.LongStream;
 import javax.sound.midi.Transmitter;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
+import javax.swing.JPanel;
 import javax.xml.transform.TransformerException;
 
 import jp.crestmuse.cmx.amusaj.sp.MidiInputModule;
@@ -38,6 +39,11 @@ public class MyApp extends ImageNotePianoRoll {
     int subjectId = 100; // 被験者番号を指定
     int takeCount = 0; // 保存番号の始まり（連番）
 
+    // String rhythmState = "NONE";
+    double rhythmDiff = 0.0;
+    boolean rhythmMode = false;
+    String lastRhythmResult = "NONE";
+
     private Transmitter midiTransmitter;
 
     CMXController cmx = CMXController.getInstance();
@@ -53,6 +59,8 @@ public class MyApp extends ImageNotePianoRoll {
     IMusicData musicData;
     PerformanceData performanceData;
     long lastTickPosition = 0;
+
+    RhythmJudge rhythmJudge;
 
     boolean flash = false;
     long flashStartTime = 0;
@@ -108,6 +116,8 @@ public class MyApp extends ImageNotePianoRoll {
         // performanceData
         try {
             performanceData = new PerformanceData(musicData.getScc().toDataSet());
+            rhythmJudge = new RhythmJudge(
+                    musicData.getScc().toDataSet());
         } catch (TransformerException e) {
             throw new RuntimeException(e);
         }
@@ -329,6 +339,7 @@ public class MyApp extends ImageNotePianoRoll {
 
             return null;
         });
+        createMenu();
     }
 
     @Override
@@ -336,8 +347,11 @@ public class MyApp extends ImageNotePianoRoll {
         super.draw();
 
         long tickPosition = cmx.getTickPosition();
+
         if (tickPosition < lastTickPosition) {
+            rhythmJudge.reset();
             loopJustReset = true;
+            performanceData.setNotesToPlay();
         }
 
         LongStream.rangeClosed(lastTickPosition, tickPosition).forEach(tick -> {
@@ -353,18 +367,55 @@ public class MyApp extends ImageNotePianoRoll {
         });
         lastTickPosition = tickPosition;
 
-        // === 停止時フラッシュ表示 ===
+        // === 停止時フラッシュ表示 === ★
         if (flash) {
             if (millis() - flashStartTime < 120) {
 
+                int r = 0;
+                int g = 120;
+                int b = 255;
+
+                switch (lastRhythmResult) {
+
+                    case "OK":
+                        r = 0;
+                        g = 180;
+                        b = 255; // 青（正解）
+                        break;
+
+                    case "EARLY":
+                        r = 0;
+                        g = 255;
+                        b = 120; // 緑（速い）
+                        break;
+
+                    case "LATE":
+                        r = 255;
+                        g = 80;
+                        b = 80; // 赤（遅い）
+                        break;
+
+                    case "WRONG_NOTE":
+                        r = 255;
+                        g = 0;
+                        b = 0; // 赤強め（ミス）
+                        break;
+
+                    default:
+                        r = 200;
+                        g = 200;
+                        b = 200;
+                }
+
                 pushStyle();
                 noStroke();
-                fill(0, 120, 255, 150);
+                fill(r, g, b, 150);
 
-                int thickness = 30;
-                rect(thickness, 0, width - thickness, thickness);
-                rect(0, 0, thickness, height - 105);
-                rect(width - thickness, thickness, thickness, height - 105 - thickness);
+                int t = 30;
+
+                rect(t, 0, width - t, t);
+                rect(0, 0, t, height - 105);
+                rect(width - t, t, t, height - 105 - t);
 
                 popStyle();
 
@@ -373,16 +424,34 @@ public class MyApp extends ImageNotePianoRoll {
             }
         }
 
-        // カラーバーを隠すかどうかを指定 システム2で使用
+        // カラーバーを隠すかどうかを指定 システム2で使用 コメントアウトでカラーバー非表示機能なし　★
         if (loopJustReset) {
             loopJustReset = false;
 
-            loopCount++;
-            currentHideRate = Math.min(1.0, loopCount * hideStep);
-
-            updateHighlightByRate(currentHideRate);
+            if (!rhythmMode) {
+                loopCount++;
+                currentHideRate = Math.min(1.0, loopCount * hideStep);
+                updateHighlightByRate(currentHideRate);
+            }
         }
 
+        fill(0);
+        textSize(16);
+        textAlign(LEFT, TOP);
+        
+        //★
+        if (rhythmMode) {
+            text("MODE: RHYTHM", 20, 30);
+        } else {
+            text("MODE: LEARNING", 20, 30);
+        }
+    }
+    
+    //★
+    public void setRhythmResult(String result) {
+        lastRhythmResult = result;
+        flash = true;
+        flashStartTime = millis();
     }
 
     void updateHighlightByRate(double rate) {
@@ -468,7 +537,7 @@ public class MyApp extends ImageNotePianoRoll {
 
             PianoTeacherModule pianoTeacherModule = new PianoTeacherModule(
                     musicData.getScc().toDataSet(),
-                    performanceData);
+                    performanceData, rhythmJudge, this);
 
             ReceiverModule receiver = new ReceiverModule(musicData.getScc().toDataSet(), midiRecorder);
 
@@ -499,8 +568,10 @@ public class MyApp extends ImageNotePianoRoll {
         if (!cmx.isNowPlaying()) {
             cmx.playMusic();
         }
-        flash = true;
-        flashStartTime = millis();
+        if (rhythmMode) {
+            flash = true;
+            flashStartTime = millis();
+        }
     }
 
     void stopMusic() {
@@ -514,20 +585,29 @@ public class MyApp extends ImageNotePianoRoll {
 
         JMenuBar menuBar = new JMenuBar();
 
-        Button btnStart = new Button("Start");
-        btnStart.addActionListener(e -> {
-            startMusic();
-        });
+        java.awt.Button btnStart = new java.awt.Button("Start");
+        btnStart.addActionListener(e -> startMusic());
         menuBar.add(btnStart);
 
-        Button btnStop = new Button("Stop");
-        btnStop.addActionListener(e -> {
-            stopMusic();
-        });
+        java.awt.Button btnStop = new java.awt.Button("Stop");
+        btnStop.addActionListener(e -> stopMusic());
         menuBar.add(btnStop);
 
+        //★
+        java.awt.Button btnMode = new java.awt.Button("Learning Mode");
+        btnMode.addActionListener(e -> {
+            rhythmMode = !rhythmMode;
+
+            if (rhythmMode) {
+                btnMode.setLabel("Rhythm Mode");
+            } else {
+                btnMode.setLabel("Learning Mode");
+            }
+        });
+        menuBar.add(btnMode);
+
         frame.setJMenuBar(menuBar);
-        frame.setVisible(true);
+        frame.revalidate();
     }
 
     public static void main(String[] args) {

@@ -45,7 +45,7 @@ public class PerformanceData {
 
     public void performed(byte note) {
         // notesToPlayの中から、最初に見つかった「notenumが一致するノート」を削除
-        // そのtickやチャンネルにノートがなくなったら、キーごと削除
+        // そのtickやチャンネルにノートがなくなったら、キーごと削除(演奏済みを判定)
         for (Map.Entry<Byte, LinkedHashMap<Long, List<MutableNote>>> entry : notesToPlay.entrySet()) {
             Map.Entry<Long, List<MutableNote>> firstEntry = entry.getValue().entrySet().iterator().next();
             for (MutableNote note1 : firstEntry.getValue()) {

@@ -190,7 +190,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
             PdfDisplay pd = pdfToDrawFront.get(i);
             float y = pdfYFront.get(i);
             drawSliceAtY(pd.pdfIndex, pd.sliceIndex, y, 0.51f);
-            stroke(80);
+            stroke(Color.BLACK.getRGB());
             strokeWeight(1);
             line(0, y, width / 3 + 86, y);
         }
@@ -198,7 +198,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
 
     void drawPdfGuideLines() {
         pushStyle();
-        stroke(80);
+        stroke(Color.BLACK.getRGB());
         strokeWeight(1);
 
         for (int i = 0; i < pdfYFront.size(); i++) {
@@ -267,12 +267,12 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                             } else {
                                 // 全てのノートを黄色で塗る
                                 fill(channel.color.getRGB());
-                                stroke(Color.LIGHT_GRAY.getRGB());
+                                stroke(Color.BLACK.getRGB());
                                 this.rect(x, y, w, h);
                             }
                             if (highlightIndexes.contains(noteIndex)) {
                                 // 横全域にバーを描画
-                                noStroke();
+                                stroke(Color.BLACK.getRGB());
                                 fill(200, 255);
                                 this.rect(0, y, width, h);
 
