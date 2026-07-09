@@ -1,8 +1,7 @@
 package jp.kthrlab.pianorollsample;
 
-import java.awt.Button;
-import java.awt.Color; //<>//
-import java.util.ArrayList;
+import java.awt.Color;
+import java.util.ArrayList; //<>//
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.LongStream;
@@ -10,7 +9,6 @@ import java.util.stream.LongStream;
 import javax.sound.midi.Transmitter;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
-import javax.swing.JPanel;
 import javax.xml.transform.TransformerException;
 
 import jp.crestmuse.cmx.amusaj.sp.MidiInputModule;
@@ -76,8 +74,8 @@ public class MyApp extends ImageNotePianoRoll {
 
         // midiを指定 曲
         musicData = new MusicData(
-                "kirakira2.mid",
-                // "ex1.mid",
+                // "kirakira2.mid",
+                "ex1.mid",
                 // "ex2.mid",
                 // "ex3.mid",
                 // "ex4.mid",
@@ -133,33 +131,33 @@ public class MyApp extends ImageNotePianoRoll {
 
         // pdfを指定 曲
         String[] pdfs = {
-                // kirakira
-                "/kirakira_0to3.pdf",
-                "/kirakira_4to6.pdf",
-                "/kirakira_7to10.pdf",
-                "/kirakira_11to13.pdf"
+                //// kirakira
+                // "/kirakira_0to3.pdf",
+                // "/kirakira_4to6.pdf",
+                // "/kirakira_7to10.pdf",
+                // "/kirakira_11to13.pdf"
 
-                //// ex1
-                // "/ex1_0to5.pdf",
-                // "/ex1_6to8.pdf",
-                // "/ex1_9to12.pdf",
-                // "/ex1_13to15.pdf",
-                // "/ex1_16to21.pdf",
-                // "/ex1_22to24.pdf",
-                // "/ex1_25to29.pdf",
-                // "/ex1_30to31.pdf",
-                // "/ex1_32to37.pdf",
-                // "/ex1_38to40.pdf",
-                // "/ex1_41to46.pdf",
-                // "/ex1_47to49.pdf",
-                // "/ex1_50to53.pdf",
-                // "/ex1_54to57.pdf",
-                // "/ex1_58to61.pdf",
-                // "/ex1_62to65.pdf",
-                // "/ex1_66.pdf",
-                // "/ex1_67.pdf",
-                // "/ex1_68to71.pdf",
-                // "/ex1_72to74.pdf"
+                // ex1
+                "/ex1_0to5.pdf",
+                "/ex1_6to8.pdf",
+                "/ex1_9to12.pdf",
+                "/ex1_13to15.pdf",
+                "/ex1_16to21.pdf",
+                "/ex1_22to24.pdf",
+                "/ex1_25to29.pdf",
+                "/ex1_30to31.pdf",
+                "/ex1_32to37.pdf",
+                "/ex1_38to40.pdf",
+                "/ex1_41to46.pdf",
+                "/ex1_47to49.pdf",
+                "/ex1_50to53.pdf",
+                "/ex1_54to57.pdf",
+                "/ex1_58to61.pdf",
+                "/ex1_62to65.pdf",
+                "/ex1_66.pdf",
+                "/ex1_67.pdf",
+                "/ex1_68to71.pdf",
+                "/ex1_72to74.pdf"
 
                 //// ex2
                 // "/ex2_0to4.pdf",
@@ -270,19 +268,19 @@ public class MyApp extends ImageNotePianoRoll {
 
         // 1小節分の音数を指定 曲
 
-        // kirakira
-        allSongs.add(new int[] {
-                4, 3, 4, 3
-        });
-
-        //// ex1
+        //// kirakira
         // allSongs.add(new int[] {
-        // 6, 3, 4, 3,
-        // 6, 3, 5, 2,
-        // 6, 3, 6, 3,
-        // 4, 4, 4, 4,
-        // 1, 1, 4, 3
-        // });
+        // 4, 3, 4, 3
+        // })
+
+        // ex1
+        allSongs.add(new int[] {
+                6, 3, 4, 3,
+                6, 3, 5, 2,
+                6, 3, 6, 3,
+                4, 4, 4, 4,
+                1, 1, 4, 3
+        });
 
         //// ex2
         // allSongs.add(new int[] {
@@ -424,7 +422,7 @@ public class MyApp extends ImageNotePianoRoll {
             }
         }
 
-        // カラーバーを隠すかどうかを指定 システム2で使用 コメントアウトでカラーバー非表示機能なし　★
+        // カラーバーを隠すかどうかを指定 システム2で使用 コメントアウトでカラーバー非表示機能なし ★
         if (loopJustReset) {
             loopJustReset = false;
 
@@ -435,19 +433,38 @@ public class MyApp extends ImageNotePianoRoll {
             }
         }
 
-        fill(0);
+        // モード表示
         textSize(16);
         textAlign(LEFT, TOP);
-        
-        //★
+
+        String modeText = rhythmMode ? "CURRENT MODE: RHYTHM"
+                : "CURRENT MODE: LEARNING";
+
+        // 位置
+        float boxX = 20;
+        float boxY = 30;
+        float padding = 10;
+
+        float boxW = textWidth(modeText) + padding * 2;
+        float boxH = 30;
+
+        // ★ モードによって色分け
         if (rhythmMode) {
-            text("MODE: RHYTHM", 20, 30);
+            fill(255, 80, 80); // RHYTHM 赤
         } else {
-            text("MODE: LEARNING", 20, 30);
+            fill(80, 160, 255); // LEARNING 青
         }
+
+        stroke(0);
+        strokeWeight(2);
+        rect(width - boxW - boxX, boxY, boxW, boxH, 8);
+
+        fill(0);
+        noStroke();
+        text(modeText, width - boxW - boxX + padding, boxY + 7);
     }
-    
-    //★
+
+    // ★
     public void setRhythmResult(String result) {
         lastRhythmResult = result;
         flash = true;
@@ -585,23 +602,23 @@ public class MyApp extends ImageNotePianoRoll {
 
         JMenuBar menuBar = new JMenuBar();
 
-        java.awt.Button btnStart = new java.awt.Button("Start");
-        btnStart.addActionListener(e -> startMusic());
-        menuBar.add(btnStart);
+        // java.awt.Button btnStart = new java.awt.Button("Start");
+        // btnStart.addActionListener(e -> startMusic());
+        // menuBar.add(btnStart);
+        //
+        // java.awt.Button btnStop = new java.awt.Button("Stop");
+        // btnStop.addActionListener(e -> stopMusic());
+        // menuBar.add(btnStop);
 
-        java.awt.Button btnStop = new java.awt.Button("Stop");
-        btnStop.addActionListener(e -> stopMusic());
-        menuBar.add(btnStop);
-
-        //★
-        java.awt.Button btnMode = new java.awt.Button("Learning Mode");
+        // ★
+        java.awt.Button btnMode = new java.awt.Button("Switch to Rhythm Mode");
         btnMode.addActionListener(e -> {
             rhythmMode = !rhythmMode;
 
             if (rhythmMode) {
-                btnMode.setLabel("Rhythm Mode");
+                btnMode.setLabel("Switch to Learning Mode");
             } else {
-                btnMode.setLabel("Learning Mode");
+                btnMode.setLabel("Switch to Rhythm Mode");
             }
         });
         menuBar.add(btnMode);

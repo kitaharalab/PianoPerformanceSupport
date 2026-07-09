@@ -93,7 +93,7 @@ public class PAppletPianoRoll extends PApplet implements PianoRoll {
                 : hk.getBlackKeyHeight();
 
         float y = hk.getKeyboardY();
-        float yOffset = 22;
+        float yOffset = 35;
 
         pushStyle();
         fill(255, 0, 0);

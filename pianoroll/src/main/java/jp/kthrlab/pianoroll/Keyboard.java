@@ -2,8 +2,8 @@ package jp.kthrlab.pianoroll;
 
 public class Keyboard {
     // Constants
-    static final float WHITE_KEY_HEIGHT_RATIO = 0.12f; // 鍵盤の高さ比率
-    static final float BLACK_KEY_HEIGHT_RATIO = 0.07f; // 鍵盤の高さ比率
+    static final float WHITE_KEY_HEIGHT_RATIO = 0.24f; // 鍵盤の高さ比率
+    static final float BLACK_KEY_HEIGHT_RATIO = 0.14f; // 鍵盤の高さ比率
     public enum NumOfKeysPerOctave {
         WHITE(7),
         BLACK(5),
