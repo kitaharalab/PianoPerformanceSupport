@@ -74,8 +74,8 @@ public class MyApp extends ImageNotePianoRoll {
 
         // midiを指定 曲
         musicData = new MusicData(
-                // "kirakira2.mid",
-                "ex1.mid",
+                "kirakira2.mid",
+                //"ex1.mid",
                 // "ex2.mid",
                 // "ex3.mid",
                 // "ex4.mid",
@@ -131,33 +131,33 @@ public class MyApp extends ImageNotePianoRoll {
 
         // pdfを指定 曲
         String[] pdfs = {
-                //// kirakira
-                // "/kirakira_0to3.pdf",
-                // "/kirakira_4to6.pdf",
-                // "/kirakira_7to10.pdf",
-                // "/kirakira_11to13.pdf"
+                // kirakira
+                 "/kirakira_0to3.pdf",
+                 "/kirakira_4to6.pdf",
+                 "/kirakira_7to10.pdf",
+                 "/kirakira_11to13.pdf"
 
-                // ex1
-                "/ex1_0to5.pdf",
-                "/ex1_6to8.pdf",
-                "/ex1_9to12.pdf",
-                "/ex1_13to15.pdf",
-                "/ex1_16to21.pdf",
-                "/ex1_22to24.pdf",
-                "/ex1_25to29.pdf",
-                "/ex1_30to31.pdf",
-                "/ex1_32to37.pdf",
-                "/ex1_38to40.pdf",
-                "/ex1_41to46.pdf",
-                "/ex1_47to49.pdf",
-                "/ex1_50to53.pdf",
-                "/ex1_54to57.pdf",
-                "/ex1_58to61.pdf",
-                "/ex1_62to65.pdf",
-                "/ex1_66.pdf",
-                "/ex1_67.pdf",
-                "/ex1_68to71.pdf",
-                "/ex1_72to74.pdf"
+                //// ex1
+                //"/ex1_0to5.pdf",
+                //"/ex1_6to8.pdf",
+                //"/ex1_9to12.pdf",
+                //"/ex1_13to15.pdf",
+                //"/ex1_16to21.pdf",
+                //"/ex1_22to24.pdf",
+                //"/ex1_25to29.pdf",
+                //"/ex1_30to31.pdf",
+                //"/ex1_32to37.pdf",
+                //"/ex1_38to40.pdf",
+                //"/ex1_41to46.pdf",
+                //"/ex1_47to49.pdf",
+                //"/ex1_50to53.pdf",
+                //"/ex1_54to57.pdf",
+                //"/ex1_58to61.pdf",
+                //"/ex1_62to65.pdf",
+                //"/ex1_66.pdf",
+                //"/ex1_67.pdf",
+                //"/ex1_68to71.pdf",
+                //"/ex1_72to74.pdf"
 
                 //// ex2
                 // "/ex2_0to4.pdf",
@@ -268,19 +268,19 @@ public class MyApp extends ImageNotePianoRoll {
 
         // 1小節分の音数を指定 曲
 
-        //// kirakira
-        // allSongs.add(new int[] {
-        // 4, 3, 4, 3
-        // })
+        // kirakira
+         allSongs.add(new int[] {
+         4, 3, 4, 3
+         });
 
-        // ex1
-        allSongs.add(new int[] {
-                6, 3, 4, 3,
-                6, 3, 5, 2,
-                6, 3, 6, 3,
-                4, 4, 4, 4,
-                1, 1, 4, 3
-        });
+        //// ex1
+        //allSongs.add(new int[] {
+        //        6, 3, 4, 3,
+        //        6, 3, 5, 2,
+        //        6, 3, 6, 3,
+        //        4, 4, 4, 4,
+        //        1, 1, 4, 3
+        //});
 
         //// ex2
         // allSongs.add(new int[] {
