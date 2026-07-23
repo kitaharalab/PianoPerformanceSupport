@@ -44,3 +44,7 @@ task("printEnv") {
     println(sourceSets["main"].runtimeClasspath.files)
 //    println("sourceSets.main.output.asPath = ${sourceSets["main"].output.asPath}")
 }
+
+tasks.withType<AbstractCopyTask>().configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

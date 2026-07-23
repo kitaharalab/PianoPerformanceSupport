@@ -15,6 +15,7 @@ public class ReceiverModule extends SPModule {
     CMXController cmx = CMXController.getInstance();
     private static MidiRecorder recorder = new MidiRecorder();
     private MidiRecorder midiRecorder;
+    private PerformanceData performanceData;
 
     SCCDataSet sccDataSet;
     private static long currentTickPosition = 0;
@@ -37,9 +38,18 @@ public class ReceiverModule extends SPModule {
         stopRequested = true;
     }
 
-    ReceiverModule(SCCDataSet sccDataSet, MidiRecorder midiRecorder) {
+    ReceiverModule(SCCDataSet sccDataSet, MidiRecorder midiRecorder, PerformanceData performanceData) {
         this.sccDataSet = sccDataSet;
         this.midiRecorder = midiRecorder;
+        this.performanceData = performanceData;
+    }
+
+    public void updatePerformanceData(PerformanceData performanceData) {
+        this.performanceData = performanceData;
+    }
+
+    public void updateSccDataSet(SCCDataSet sccDataSet) {
+        this.sccDataSet = sccDataSet;
     }
 
     @Override
@@ -54,15 +64,15 @@ public class ReceiverModule extends SPModule {
         if ((msg[0] & 0xF0) == 0x90 && msg[2] > 0) {
             int inputPitch = msg[1];
             CurrentInputState.setCurrentNote(inputPitch);
-            int tickTolerance = 0;
 
-            boolean isCorrect = Arrays.stream(sccDataSet.getPart(0).getNoteOnlyList())
-                    .anyMatch(note -> Math.abs(note.onset() - currentTick) <= tickTolerance
-                            && note.notenum() == inputPitch);
+            jp.crestmuse.cmx.elements.MutableNote targetNote = null;
+            if (performanceData != null) {
+                targetNote = performanceData.getNextNoteToPlay(inputPitch);
+            }
 
-            if (isCorrect) {
-                // 正解ノートなら再生再開
-                lastCorrectOnset = currentTick;
+            if (targetNote != null) {
+                long targetOnset = targetNote.onset();
+                lastCorrectOnset = targetOnset;
                 requestStop(false); // 停止フラグ解除
                 cmx.playMusic();
             } else {

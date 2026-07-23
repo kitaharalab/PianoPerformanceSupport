@@ -22,6 +22,12 @@ public class PianoTeacherModule extends SPModule {
         this.app = app;
     }
 
+    public void updateSongData(SCCDataSet sccDataSet, PerformanceData performanceData, RhythmJudge rhythmJudge) {
+        this.sccDataSet = sccDataSet;
+        this.performanceData = performanceData;
+        this.rhythmJudge = rhythmJudge;
+    }
+
     // ノートオンイベント（velocity > 0）を検出したら、PerformanceDataにそのノート番号（msg[1]）を通知する
     @Override
     public void execute(java.lang.Object[] objects, TimeSeriesCompatible[] timeSeriesCompatibles)
@@ -34,7 +40,12 @@ public class PianoTeacherModule extends SPModule {
         if ((msg[0] & 0xF0) == 0x90 && msg[2] > 0) {
             System.out.println("PianoTeacherModule.execute" + msg[0] + " " + msg[1] + " "
                     + msg[2] + " " + cmx.getTickPosition());
-            performanceData.performed(msg[1]);
+            
+            // 次に演奏すべき対象ノートを取得し、ピンポイントで削除する
+            jp.crestmuse.cmx.elements.MutableNote targetNote = performanceData.getNextNoteToPlay(msg[1]);
+            if (targetNote != null) {
+                performanceData.performed(targetNote);
+            }
 
             long tick = cmx.getTickPosition();
             String result = rhythmJudge.judge(
@@ -47,7 +58,10 @@ public class PianoTeacherModule extends SPModule {
 
             System.out.println(result);
         }
-        timeSeriesCompatibles[0].add(midievt);
+
+        if (!app.shouldMuteMidiOutput()) {
+            timeSeriesCompatibles[0].add(midievt);
+        }
     }
 
     @Override
