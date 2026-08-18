@@ -38,6 +38,7 @@ public class MusicData implements IMusicData {
         this.division = division;
 
         this.scc = CMXController.readSMFAsSCC(getClass().getClassLoader().getResource(filename).getPath());
+        this.sccAudible = CMXController.readSMFAsSCC(getClass().getClassLoader().getResource(filename).getPath());
 
         try {
             scc.toDataSet().repeat(
@@ -45,12 +46,28 @@ public class MusicData implements IMusicData {
                     (long) ((initial_blank_measures + num_of_measures) * beats_per_measure * scc.getDivision()),
                     repeat_times - 1
             );
+            sccAudible.toDataSet().repeat(
+                    (long) (initial_blank_measures * beats_per_measure * sccAudible.getDivision()),
+                    (long) ((initial_blank_measures + num_of_measures) * beats_per_measure * sccAudible.getDivision()),
+                    repeat_times - 1
+            );
+            // scc: 消音バージョン（練習時・通常モード用）
+            Arrays.stream(scc.toDataSet().getPartList()).forEach(part -> {
+                part.addControlChange(0, 7, 0);
+                part.addControlChange(1, 7, 0);
+            });
+            // sccAudible: 有音バージョン（お手本再生用）
+            Arrays.stream(sccAudible.toDataSet().getPartList()).forEach(part -> {
+                part.addControlChange(0, 7, 100);
+                part.addControlChange(1, 7, 100);
+            });
         } catch (TransformerException e) {
             throw new RuntimeException(e);
         }
     }
 
     private SCC scc;
+    private SCC sccAudible;
 
     // multi-channel
     private Set<AbstractMap.SimpleEntry<Integer, List<Integer>>> channelCurveSet = Collections.synchronizedSet(new CopyOnWriteArraySet<>());
@@ -166,6 +183,11 @@ public class MusicData implements IMusicData {
     @Override
     public SCC getScc() {
         return scc;
+    }
+
+    @Override
+    public SCC getSccAudible() {
+        return sccAudible;
     }
 
     @Override

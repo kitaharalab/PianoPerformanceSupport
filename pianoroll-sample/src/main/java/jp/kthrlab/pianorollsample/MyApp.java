@@ -46,6 +46,12 @@ public class MyApp extends ImageNotePianoRoll {
     int currentBlockIndex = 0;          // 現在の2小節ブロック番号
     String lastRhythmResult = "NONE";
 
+    // モードタブの配置座標情報 (クリック判定用)
+    private float[] tabX = new float[3];
+    private float[] tabW = new float[3];
+    private float tabY = 22;
+    private float tabH = 26;
+
     private Transmitter midiTransmitter;
 
     CMXController cmx = CMXController.getInstance();
@@ -120,7 +126,9 @@ public class MyApp extends ImageNotePianoRoll {
                 if (cmx.getMicrosecondPosition() >= cmx.getMicrosecondLength() && cmx.getMicrosecondLength() > 0) {
                     currentBlockIndex = 0;
                     isDemoTurn = true;
-                    setPartVolume(100);
+                    if (musicData != null && musicData.getSccAudible() != null) {
+                        cmx.smfread(musicData.getSccAudible());
+                    }
                     performanceData.setNotesToPlayForRange(0, twoMeasureTicks);
                     cmx.setTickPosition(0);
                     lastTickPosition = 0;
@@ -135,8 +143,7 @@ public class MyApp extends ImageNotePianoRoll {
                 long blockEndTick = blockStartTick + twoMeasureTicks;
 
                 if (isDemoTurn) {
-                    //  お手本ターン (2小節)  PC/モニターからお手本音を鳴らす
-                    setPartVolume(100);
+                    //  お手本ターン (2小節)  有音でお手本を自動再生
                     if (!cmx.isNowPlaying()) {
                         cmx.playMusic();
                     }
@@ -144,16 +151,17 @@ public class MyApp extends ImageNotePianoRoll {
                     if (tickPosition >= blockEndTick && tickPosition >= blockStartTick) {
                         stopMusic();
                         silenceAllChannels();
-                        setPartVolume(0);
+                        // 演奏ターンへ移行：消音バージョンのSCCを読み込んで音漏れを完全防止
+                        if (musicData != null && musicData.getScc() != null) {
+                            cmx.smfread(musicData.getScc());
+                        }
                         performanceData.setNotesToPlayForRange(blockStartTick, blockEndTick);
                         cmx.setTickPosition(blockStartTick);
                         lastTickPosition = blockStartTick;
                         isDemoTurn = false; // 演奏ターンへ移行
                     }
                 } else {
-                    //  演奏ターン (2小節)  手本音は消音
-                    setPartVolume(0);
-
+                    //  演奏ターン (2小節)  CMXは消音、自分の打鍵音のみが鳴る
                     LongStream.rangeClosed(lastTickPosition, tickPosition).forEach(tick -> {
                         if (performanceData.hasNotesToPlay(tick)) {
                             stopMusic(); // 未演奏ノートがあれば停止して待機
@@ -174,11 +182,14 @@ public class MyApp extends ImageNotePianoRoll {
                         long nextBlockStartTick = (long) currentBlockIndex * twoMeasureTicks;
                         long nextBlockEndTick = nextBlockStartTick + twoMeasureTicks;
 
+                        // 次のお手本ターンへ移行：有音バージョンのSCCを読み込んで手本音を再生
+                        if (musicData != null && musicData.getSccAudible() != null) {
+                            cmx.smfread(musicData.getSccAudible());
+                        }
                         performanceData.setNotesToPlayForRange(nextBlockStartTick, nextBlockEndTick);
                         cmx.setTickPosition(nextBlockStartTick);
                         lastTickPosition = nextBlockStartTick;
                         isDemoTurn = true; // 次のブロックのお手本ターンへ移行
-                        setPartVolume(100);
                     }
                 }
             }
@@ -271,69 +282,99 @@ public class MyApp extends ImageNotePianoRoll {
             }
         }
 
-        // モード表示のモダン化
+        // インタラクティブなモード切替タブバーの描画
+        drawModeTabs();
+    }
+
+    private void drawModeTabs() {
         pushStyle();
-        textSize(14);
-        textAlign(LEFT, CENTER);
+        textSize(11.5f);
+        textAlign(CENTER, CENTER);
 
-        String modeName;
+        String[] tabLabels = new String[3];
+        tabLabels[0] = "Learning Mode";
+        tabLabels[1] = "Rhythm Mode";
         if (twoMeasureRepeatMode) {
-            modeName = isDemoTurn ? "2-MEASURE (DEMO)" : "2-MEASURE (PLAY)";
-        } else if (rhythmMode) {
-            modeName = "RHYTHM";
+            tabLabels[2] = isDemoTurn ? "2-Measure (DEMO)" : "2-Measure (PLAY)";
         } else {
-            modeName = "LEARNING";
+            tabLabels[2] = "2-Measure Repeat";
         }
 
-        String prefixText = "MODE: ";
-        String modeText = prefixText + modeName;
+        float paddingX = 10;
+        float spacing = 10;
+        for (int i = 0; i < 3; i++) {
+            tabW[i] = textWidth(tabLabels[i]) + paddingX * 2;
+        }
 
-        // 位置
-        float boxX = 20;
-        float boxY = 30;
-        float paddingX = 15;
+        float rightMargin = 20;
+        float currentX = width - rightMargin;
 
-        float boxW = textWidth(modeText) + paddingX * 2;
-        float boxH = 36;
+        for (int i = 2; i >= 0; i--) {
+            currentX -= tabW[i];
+            tabX[i] = currentX;
+            currentX -= spacing;
+        }
 
-        // 半透明のダークネイビー背景 (グラスモフィズム風)
-        fill(18, 22, 30, 210);
+        for (int i = 0; i < 3; i++) {
+            boolean isActive = false;
+            int strokeR = 75, strokeG = 90, strokeB = 115;
+            int textR = 170, textG = 180, textB = 200;
 
-        // モード別に境界線色を指定
-        if (twoMeasureRepeatMode) {
-            if (isDemoTurn) {
-                stroke(255, 180, 50); // ネオンオレンジ（お手本）
-            } else {
-                stroke(50, 220, 120); // ネオングリーン（演奏）
+            if (i == 0 && !rhythmMode && !twoMeasureRepeatMode) {
+                isActive = true;
+                strokeR = 64; strokeG = 156; strokeB = 255; // ネオンブルー
+                textR = 95; textG = 175; textB = 255;
+            } else if (i == 1 && rhythmMode) {
+                isActive = true;
+                strokeR = 255; strokeG = 75; strokeB = 75; // ネオンレッド
+                textR = 255; textG = 95; textB = 95;
+            } else if (i == 2 && twoMeasureRepeatMode) {
+                isActive = true;
+                if (isDemoTurn) {
+                    strokeR = 255; strokeG = 180; strokeB = 50; // ネオンオレンジ（お手本）
+                    textR = 255; textG = 190; textB = 70;
+                } else {
+                    strokeR = 50; strokeG = 220; strokeB = 120; // ネオングリーン（演奏）
+                    textR = 80; textG = 235; textB = 140;
+                }
             }
-        } else if (rhythmMode) {
-            stroke(255, 75, 75); // ネオンレッド
-        } else {
-            stroke(64, 156, 255); // ネオンブルー
-        }
-        strokeWeight(1.5f);
-        rect(width - boxW - boxX, boxY, boxW, boxH, 6);
 
-        // テキスト描画 (コントラストを高くして見やすさを向上)
-        noStroke();
-        fill(240); // 白に近いグレー
-        float textStartX = width - boxW - boxX + paddingX;
-        float textY = boxY + boxH / 2f - 1;
-        text(prefixText, textStartX, textY);
+            boolean isHover = mouseX >= tabX[i] && mouseX <= tabX[i] + tabW[i] &&
+                              mouseY >= tabY && mouseY <= tabY + tabH;
 
-        if (twoMeasureRepeatMode) {
-            if (isDemoTurn) {
-                fill(255, 190, 70);
-            } else {
-                fill(80, 235, 140);
+            // 各タブの独立した境界線と背景
+            fill(14, 18, 26, isActive ? 245 : (isHover ? 200 : 160));
+            stroke(strokeR, strokeG, strokeB, isActive ? 255 : (isHover ? 200 : 140));
+            strokeWeight(isActive ? 1.8f : 1.0f);
+            rect(tabX[i], tabY, tabW[i], tabH, 4);
+
+            // アクティブタブの下部発光インジケーターバー
+            if (isActive) {
+                noStroke();
+                fill(strokeR, strokeG, strokeB, 240);
+                rect(tabX[i] + 3, tabY + tabH - 2.5f, tabW[i] - 6, 2.5f, 1);
             }
-        } else if (rhythmMode) {
-            fill(255, 95, 95);
-        } else {
-            fill(95, 175, 255);
+
+            // テキスト描画
+            noStroke();
+            fill(isActive ? textR : (isHover ? 240 : textR),
+                 isActive ? textG : (isHover ? 245 : textG),
+                 isActive ? textB : (isHover ? 255 : textB));
+            text(tabLabels[i], tabX[i] + tabW[i] / 2f, tabY + tabH / 2f - (isActive ? 1.5f : 1f));
         }
-        text(modeName, textStartX + textWidth(prefixText), textY);
         popStyle();
+    }
+
+    @Override
+    public void mousePressed() {
+        super.mousePressed();
+        for (int i = 0; i < 3; i++) {
+            if (mouseX >= tabX[i] && mouseX <= tabX[i] + tabW[i] &&
+                mouseY >= tabY && mouseY <= tabY + tabH) {
+                setAppMode(i);
+                break;
+            }
+        }
     }
 
     // ★
@@ -455,7 +496,7 @@ public class MyApp extends ImageNotePianoRoll {
     }
 
     public boolean shouldMuteMidiOutput() {
-        return twoMeasureRepeatMode && !isDemoTurn;
+        return false;
     }
 
     private void silenceAllChannels() {
@@ -475,25 +516,35 @@ public class MyApp extends ImageNotePianoRoll {
 
     void setAppMode(int modeIndex) {
         stopMusic();
+        silenceAllChannels();
         loopCount = 0;
         currentHideRate = 0.0;
         highlightCache.clear();
         setHighlightIndexes(highlightCache);
 
         if (modeIndex == 0) {
+            // Learning Mode: 消音バージョンのSCCを読み込み、音漏れを完全防止
             rhythmMode = false;
             twoMeasureRepeatMode = false;
-            setPartVolume(0);
+            if (musicData != null && musicData.getScc() != null) {
+                cmx.smfread(musicData.getScc());
+            }
         } else if (modeIndex == 1) {
+            // Rhythm Mode: 消音バージョンのSCCを読み込み、音漏れを完全防止
             rhythmMode = true;
             twoMeasureRepeatMode = false;
-            setPartVolume(0);
+            if (musicData != null && musicData.getScc() != null) {
+                cmx.smfread(musicData.getScc());
+            }
         } else if (modeIndex == 2) {
+            // 2-Measure Repeat Mode: 有音バージョンのSCCを読み込み、最初のお手本から確実に音を再生
             rhythmMode = false;
             twoMeasureRepeatMode = true;
             isDemoTurn = true;
             currentBlockIndex = 0;
-            setPartVolume(100);
+            if (musicData != null && musicData.getSccAudible() != null) {
+                cmx.smfread(musicData.getSccAudible());
+            }
             if (dataModel != null) {
                 PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
                 int division = dataModelMultiChannel.getScc().getDivision();
@@ -585,22 +636,6 @@ public class MyApp extends ImageNotePianoRoll {
         JFrame frame = (JFrame) ((processing.awt.PSurfaceAWT.SmoothCanvas) getSurface().getNative()).getFrame();
 
         javax.swing.JMenuBar menuBar = new javax.swing.JMenuBar();
-
-        // モード選択メニュー
-        javax.swing.JMenu modeMenu = new javax.swing.JMenu("Mode");
-        javax.swing.JMenuItem learningItem = new javax.swing.JMenuItem("Learning Mode");
-        learningItem.addActionListener(e -> setAppMode(0));
-
-        javax.swing.JMenuItem rhythmItem = new javax.swing.JMenuItem("Rhythm Mode");
-        rhythmItem.addActionListener(e -> setAppMode(1));
-
-        javax.swing.JMenuItem twoMeasureItem = new javax.swing.JMenuItem("2-Measure Repeat Mode");
-        twoMeasureItem.addActionListener(e -> setAppMode(2));
-
-        modeMenu.add(learningItem);
-        modeMenu.add(rhythmItem);
-        modeMenu.add(twoMeasureItem);
-        menuBar.add(modeMenu);
 
         javax.swing.JMenu settingsMenu = new javax.swing.JMenu("Options");
         javax.swing.JMenuItem saveMidiItem = new javax.swing.JMenuItem("Save MIDI (S)");
@@ -773,9 +808,9 @@ public class MyApp extends ImageNotePianoRoll {
                         colors.get(part.channel() % colors.size()));
                 channels.add(channel);
 
-                // mute (controlled dynamically per turn)
-                // part.addControlChange(0, 7, 0);
-                // part.addControlChange(1, 7, 0);
+                // Mute CMX SMF player by default so timeline advancement never leaks sound in any mode
+                part.addControlChange(0, 7, 0);
+                part.addControlChange(1, 7, 0);
             });
         } catch (TransformerException e) {
             throw new RuntimeException(e);

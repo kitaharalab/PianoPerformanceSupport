@@ -19,6 +19,8 @@ public interface IMusicData {
 
     SCC getScc();
 
+    SCC getSccAudible();
+
     void setScc(SCC scc);
 
 //    /**

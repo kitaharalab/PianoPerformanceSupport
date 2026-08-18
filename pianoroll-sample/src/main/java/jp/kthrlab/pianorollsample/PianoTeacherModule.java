@@ -59,9 +59,7 @@ public class PianoTeacherModule extends SPModule {
             System.out.println(result);
         }
 
-        if (!app.shouldMuteMidiOutput()) {
-            timeSeriesCompatibles[0].add(midievt);
-        }
+        timeSeriesCompatibles[0].add(midievt);
     }
 
     @Override
