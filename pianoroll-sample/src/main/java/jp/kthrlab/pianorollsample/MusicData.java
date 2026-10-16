@@ -191,6 +191,35 @@ public class MusicData implements IMusicData {
     }
 
     @Override
+    public SCC getSccForDemoBlock(long blockStartTick, long blockEndTick) {
+        try {
+            SCC demoScc = CMXController.readSMFAsSCC(getClass().getClassLoader().getResource(filename).getPath());
+            demoScc.toDataSet().repeat(
+                    (long) (initial_blank_measures * beats_per_measure * demoScc.getDivision()),
+                    (long) ((initial_blank_measures + num_of_measures) * beats_per_measure * demoScc.getDivision()),
+                    repeat_times - 1
+            );
+            Arrays.stream(demoScc.toDataSet().getPartList()).forEach(part -> {
+                // お手本再生区間は音量100（有音）
+                part.addControlChange(0, 7, 100);
+                part.addControlChange(1, 7, 100);
+                if (blockStartTick > 0) {
+                    part.addControlChange(Math.max(0, blockStartTick - 60), 7, 100);
+                    part.addControlChange(blockStartTick, 7, 100);
+                }
+                // 2小節の終了Tick (blockEndTick) で音量0に自動カット（フライング音漏れ完全防止）
+                long cutoffTick = Math.max(blockStartTick, blockEndTick - 1);
+                part.addControlChange(cutoffTick, 7, 0);
+                part.addControlChange(blockEndTick, 7, 0);
+            });
+            return demoScc;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return sccAudible;
+        }
+    }
+
+    @Override
     public void setScc(SCC scc) {
 
     }

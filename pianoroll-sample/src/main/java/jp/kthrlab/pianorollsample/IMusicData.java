@@ -21,6 +21,8 @@ public interface IMusicData {
 
     SCC getSccAudible();
 
+    SCC getSccForDemoBlock(long blockStartTick, long blockEndTick);
+
     void setScc(SCC scc);
 
 //    /**

@@ -188,5 +188,24 @@ public class PerformanceData {
         }
         return bestNote;
     }
+
+    /**
+     * 現在打鍵待ちとなっている最も古いノートの Onset Tick を返す。
+     */
+    public Long getNextWaitingTick() {
+        Long earliestTick = null;
+        if (notesToPlay != null) {
+            for (Map.Entry<Byte, LinkedHashMap<Long, List<MutableNote>>> entry : notesToPlay.entrySet()) {
+                if (entry.getValue().isEmpty()) continue;
+                Map.Entry<Long, List<MutableNote>> firstEntry = entry.getValue().entrySet().iterator().next();
+                if (firstEntry.getKey() != null) {
+                    if (earliestTick == null || firstEntry.getKey() < earliestTick) {
+                        earliestTick = firstEntry.getKey();
+                    }
+                }
+            }
+        }
+        return earliestTick;
+    }
 }
 

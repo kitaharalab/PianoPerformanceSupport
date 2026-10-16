@@ -13,6 +13,7 @@ import javax.xml.transform.TransformerException;
 
 import jp.crestmuse.cmx.amusaj.sp.MidiInputModule;
 import jp.crestmuse.cmx.amusaj.sp.MidiOutputModule;
+import jp.crestmuse.cmx.filewrappers.SCC;
 import jp.crestmuse.cmx.processing.CMXController;
 import jp.kthrlab.pianoroll.Channel;
 import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
@@ -46,6 +47,15 @@ public class MyApp extends ImageNotePianoRoll {
     int currentBlockIndex = 0;          // 現在の2小節ブロック番号
     String lastRhythmResult = "NONE";
 
+    private HandMode currentHand = HandMode.RIGHT;
+    private SongConfig currentSongConfig = null;
+
+    // 左手・右手モードタブの配置座標情報 (クリック判定用)
+    private float[] handTabX = new float[2];
+    private float[] handTabW = new float[2];
+    private float handTabY = 22;
+    private float handTabH = 26;
+
     // モードタブの配置座標情報 (クリック判定用)
     private float[] tabX = new float[3];
     private float[] tabW = new float[3];
@@ -65,7 +75,6 @@ public class MyApp extends ImageNotePianoRoll {
     int switchIntervalMillis = 2000; // 2秒
 
     IMusicData musicData;
-    PerformanceData performanceData;
     long lastTickPosition = 0;
 
     RhythmJudge rhythmJudge;
@@ -82,8 +91,8 @@ public class MyApp extends ImageNotePianoRoll {
 
         midiRecorder = new MidiRecorder();
 
-        // 最初の曲を初期読み込み
-        loadSong(SONGS.get(0));
+        // 最初の曲（右手デフォルト）を初期読み込み
+        loadSong(RIGHT_SONGS.get(0));
 
         setupModules();
 
@@ -126,9 +135,7 @@ public class MyApp extends ImageNotePianoRoll {
                 if (cmx.getMicrosecondPosition() >= cmx.getMicrosecondLength() && cmx.getMicrosecondLength() > 0) {
                     currentBlockIndex = 0;
                     isDemoTurn = true;
-                    if (musicData != null && musicData.getSccAudible() != null) {
-                        cmx.smfread(musicData.getSccAudible());
-                    }
+                    prepareDemoTurn(0, twoMeasureTicks);
                     performanceData.setNotesToPlayForRange(0, twoMeasureTicks);
                     cmx.setTickPosition(0);
                     lastTickPosition = 0;
@@ -148,13 +155,12 @@ public class MyApp extends ImageNotePianoRoll {
                         cmx.playMusic();
                     }
 
-                    if (tickPosition >= blockEndTick && tickPosition >= blockStartTick) {
+                    // 次のブロックの1音目(blockEndTick)のonsetに届く前に、15 Tick手前の安全タイミングで先回り停止
+                    long safeStopTick = Math.max(blockStartTick, blockEndTick - 15);
+
+                    if (tickPosition >= safeStopTick) {
                         stopMusic();
                         silenceAllChannels();
-                        // 演奏ターンへ移行：消音バージョンのSCCを読み込んで音漏れを完全防止
-                        if (musicData != null && musicData.getScc() != null) {
-                            cmx.smfread(musicData.getScc());
-                        }
                         performanceData.setNotesToPlayForRange(blockStartTick, blockEndTick);
                         cmx.setTickPosition(blockStartTick);
                         lastTickPosition = blockStartTick;
@@ -182,12 +188,12 @@ public class MyApp extends ImageNotePianoRoll {
                         long nextBlockStartTick = (long) currentBlockIndex * twoMeasureTicks;
                         long nextBlockEndTick = nextBlockStartTick + twoMeasureTicks;
 
-                        // 次のお手本ターンへ移行：有音バージョンのSCCを読み込んで手本音を再生
-                        if (musicData != null && musicData.getSccAudible() != null) {
-                            cmx.smfread(musicData.getSccAudible());
-                        }
+                        // 次のお手本ターンへ移行：この2小節のみ有音化＆末尾で音量0カットしたSCCを準備
+                        prepareDemoTurn(nextBlockStartTick, nextBlockEndTick);
                         performanceData.setNotesToPlayForRange(nextBlockStartTick, nextBlockEndTick);
-                        cmx.setTickPosition(nextBlockStartTick);
+                        // 1音目の発音抜けを完全防止するため、シーク位置を音符onsetの5 Tick手前にセット
+                        long demoSeekTick = Math.max(0, nextBlockStartTick - (nextBlockStartTick > 0 ? 5 : 0));
+                        cmx.setTickPosition(demoSeekTick);
                         lastTickPosition = nextBlockStartTick;
                         isDemoTurn = true; // 次のブロックのお手本ターンへ移行
                     }
@@ -291,6 +297,7 @@ public class MyApp extends ImageNotePianoRoll {
         textSize(11.5f);
         textAlign(CENTER, CENTER);
 
+        String[] handLabels = new String[]{"Right Hand", "Left Hand"};
         String[] tabLabels = new String[3];
         tabLabels[0] = "Learning Mode";
         tabLabels[1] = "Rhythm Mode";
@@ -301,20 +308,81 @@ public class MyApp extends ImageNotePianoRoll {
         }
 
         float paddingX = 10;
-        float spacing = 10;
+        float spacing = 8;
+        float groupGap = 18;
+
+        for (int i = 0; i < 2; i++) {
+            handTabW[i] = textWidth(handLabels[i]) + paddingX * 2;
+        }
         for (int i = 0; i < 3; i++) {
             tabW[i] = textWidth(tabLabels[i]) + paddingX * 2;
         }
 
+        // 画面右上から左に向かって配置: [Right Hand] [Left Hand] | [Learning] [Rhythm] [2-Measure]
         float rightMargin = 20;
         float currentX = width - rightMargin;
 
+        // Mode タブ (右側グループ)
         for (int i = 2; i >= 0; i--) {
             currentX -= tabW[i];
             tabX[i] = currentX;
             currentX -= spacing;
         }
 
+        // グループ間の間隔
+        currentX -= (groupGap - spacing);
+
+        // Hand タブ (左側グループ)
+        for (int i = 1; i >= 0; i--) {
+            currentX -= handTabW[i];
+            handTabX[i] = currentX;
+            currentX -= spacing;
+        }
+
+        // HandグループとModeグループの間の縦セパレーター線
+        float dividerX = handTabX[1] + handTabW[1] + groupGap / 2f;
+        stroke(60, 75, 100, 150);
+        strokeWeight(1.2f);
+        line(dividerX, tabY + 4, dividerX, tabY + tabH - 4);
+
+        // === Hand タブの描画 ===
+        for (int i = 0; i < 2; i++) {
+            boolean isActive = (i == 0 && currentHand == HandMode.RIGHT) || (i == 1 && currentHand == HandMode.LEFT);
+            int strokeR, strokeG, strokeB;
+            int textR, textG, textB;
+
+            if (i == 0) {
+                // 右手: ネオンレッド/コーラル
+                strokeR = 255; strokeG = 75; strokeB = 95;
+                textR = 255; textG = 120; textB = 140;
+            } else {
+                // 左手: ネオンシアン/ブルー
+                strokeR = 0; strokeG = 210; strokeB = 255;
+                textR = 80; textG = 225; textB = 255;
+            }
+
+            boolean isHover = mouseX >= handTabX[i] && mouseX <= handTabX[i] + handTabW[i] &&
+                              mouseY >= handTabY && mouseY <= handTabY + handTabH;
+
+            fill(14, 18, 26, isActive ? 245 : (isHover ? 200 : 160));
+            stroke(strokeR, strokeG, strokeB, isActive ? 255 : (isHover ? 180 : 120));
+            strokeWeight(isActive ? 1.8f : 1.0f);
+            rect(handTabX[i], handTabY, handTabW[i], handTabH, 4);
+
+            if (isActive) {
+                noStroke();
+                fill(strokeR, strokeG, strokeB, 240);
+                rect(handTabX[i] + 3, handTabY + handTabH - 2.5f, handTabW[i] - 6, 2.5f, 1);
+            }
+
+            noStroke();
+            fill(isActive ? textR : (isHover ? 240 : 180),
+                 isActive ? textG : (isHover ? 245 : 190),
+                 isActive ? textB : (isHover ? 255 : 205));
+            text(handLabels[i], handTabX[i] + handTabW[i] / 2f, handTabY + handTabH / 2f - (isActive ? 1.5f : 1f));
+        }
+
+        // === Mode タブの描画 ===
         for (int i = 0; i < 3; i++) {
             boolean isActive = false;
             int strokeR = 75, strokeG = 90, strokeB = 115;
@@ -368,6 +436,16 @@ public class MyApp extends ImageNotePianoRoll {
     @Override
     public void mousePressed() {
         super.mousePressed();
+        // 手切り替えタブのクリック判定
+        for (int i = 0; i < 2; i++) {
+            if (mouseX >= handTabX[i] && mouseX <= handTabX[i] + handTabW[i] &&
+                mouseY >= handTabY && mouseY <= handTabY + handTabH) {
+                setHand(i == 0 ? HandMode.RIGHT : HandMode.LEFT);
+                return;
+            }
+        }
+
+        // モードタブのクリック判定
         for (int i = 0; i < 3; i++) {
             if (mouseX >= tabX[i] && mouseX <= tabX[i] + tabW[i] &&
                 mouseY >= tabY && mouseY <= tabY + tabH) {
@@ -501,15 +579,15 @@ public class MyApp extends ImageNotePianoRoll {
 
     private void silenceAllChannels() {
         if (musicData != null && musicData.getScc() != null) {
-            try {
-                long currentTick = cmx.getTickPosition();
-                Arrays.stream(musicData.getScc().toDataSet().getPartList()).forEach(part -> {
-                    part.addControlChange(currentTick, 7, 0);
-                    part.addControlChange(currentTick, 120, 0); // All Sound Off
-                    part.addControlChange(currentTick, 123, 0); // All Notes Off
-                });
-            } catch (Exception e) {
-                // 無視
+            cmx.smfread(musicData.getScc());
+        }
+    }
+
+    private void prepareDemoTurn(long blockStartTick, long blockEndTick) {
+        if (musicData != null) {
+            SCC demoScc = musicData.getSccForDemoBlock(blockStartTick, blockEndTick);
+            if (demoScc != null) {
+                cmx.smfread(demoScc);
             }
         }
     }
@@ -542,14 +620,12 @@ public class MyApp extends ImageNotePianoRoll {
             twoMeasureRepeatMode = true;
             isDemoTurn = true;
             currentBlockIndex = 0;
-            if (musicData != null && musicData.getSccAudible() != null) {
-                cmx.smfread(musicData.getSccAudible());
-            }
             if (dataModel != null) {
                 PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
                 int division = dataModelMultiChannel.getScc().getDivision();
                 int beatNum = dataModelMultiChannel.getBeatNum();
                 int twoMeasureTicks = beatNum * division * 2;
+                prepareDemoTurn(0, twoMeasureTicks);
                 if (performanceData != null) {
                     performanceData.setNotesToPlayForRange(0, twoMeasureTicks);
                 }
@@ -619,15 +695,19 @@ public class MyApp extends ImageNotePianoRoll {
         float h = isWhite ? hk.getWhiteKeyHeight() : hk.getBlackKeyHeight();
         float y = hk.getKeyboardY();
 
+        int hr = (currentHand == HandMode.LEFT) ? 0 : 255;
+        int hg = (currentHand == HandMode.LEFT) ? 210 : 150;
+        int hb = (currentHand == HandMode.LEFT) ? 255 : 50;
+
         pushStyle();
         noStroke();
         for (int i = 0; i < 5; i++) {
-            fill(64, 156, 255, 45 - i * 9);
+            fill(hr, hg, hb, 45 - i * 9);
             rect(x - i, y - i, w + i * 2, h + i * 2, 3);
         }
-        fill(64, 156, 255, 210);
+        fill(hr, hg, hb, 210);
         rect(x, y, w, h, 2);
-        fill(160, 210, 255);
+        fill(Math.min(255, hr + 80), Math.min(255, hg + 60), Math.min(255, hb + 60));
         rect(x + 1, y, w - 2, 4);
         popStyle();
     }
@@ -652,9 +732,11 @@ public class MyApp extends ImageNotePianoRoll {
         settingsMenu.add(saveMidiItem);
         menuBar.add(settingsMenu);
 
-        // 曲切り替え用メニューを追加
-        javax.swing.JMenu songsMenu = new javax.swing.JMenu("Songs");
-        for (SongConfig song : SONGS) {
+        // 曲切り替え用メニューを追加（現在の手に応じたリストを表示）
+        String songsMenuLabel = (currentHand == HandMode.RIGHT) ? "Songs (Right Hand)" : "Songs (Left Hand)";
+        javax.swing.JMenu songsMenu = new javax.swing.JMenu(songsMenuLabel);
+        List<SongConfig> currentSongs = (currentHand == HandMode.RIGHT) ? RIGHT_SONGS : LEFT_SONGS;
+        for (SongConfig song : currentSongs) {
             javax.swing.JMenuItem songItem = new javax.swing.JMenuItem(song.name);
             songItem.addActionListener(e -> {
                 loadSong(song);
@@ -667,19 +749,40 @@ public class MyApp extends ImageNotePianoRoll {
         frame.revalidate();
     }
 
+    public void setHand(HandMode hand) {
+        if (this.currentHand == hand) return;
+        stopMusic();
+        silenceAllChannels();
+        this.currentHand = hand;
+        setHandMode(hand);
+
+        if (hand == HandMode.LEFT) {
+            loadSong(LEFT_SONGS.get(0));
+        } else {
+            loadSong(RIGHT_SONGS.get(0));
+        }
+        createMenu();
+    }
+
     public static class SongConfig {
         public final String name;
         public final String midiFile;
         public final String[] pdfFiles;
+        public final HandMode hand;
 
-        public SongConfig(String name, String midiFile, String[] pdfFiles) {
+        public SongConfig(String name, String midiFile, String[] pdfFiles, HandMode hand) {
             this.name = name;
             this.midiFile = midiFile;
             this.pdfFiles = pdfFiles;
+            this.hand = hand;
+        }
+
+        public SongConfig(String name, String midiFile, String[] pdfFiles) {
+            this(name, midiFile, pdfFiles, HandMode.RIGHT);
         }
     }
 
-    private static final List<SongConfig> SONGS = List.of(
+    private static final List<SongConfig> RIGHT_SONGS = List.of(
         new SongConfig(
             "きらきら星 (Kirakira)",
             "kirakira2.mid",
@@ -688,7 +791,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/kirakira_4to6.pdf",
                 "/kirakira_7to10.pdf",
                 "/kirakira_11to13.pdf"
-            }
+            },
+            HandMode.RIGHT
         ),
         new SongConfig(
             "練習曲1 (Ex1)",
@@ -699,7 +803,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex1_32to37.pdf", "/ex1_38to40.pdf", "/ex1_41to46.pdf", "/ex1_47to49.pdf",
                 "/ex1_50to53.pdf", "/ex1_54to57.pdf", "/ex1_58to61.pdf", "/ex1_62to65.pdf",
                 "/ex1_66.pdf", "/ex1_67.pdf", "/ex1_68to71.pdf", "/ex1_72to74.pdf"
-            }
+            },
+            HandMode.RIGHT
         ),
         new SongConfig(
             "練習曲2 (Ex2)",
@@ -710,7 +815,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex2_31to34.pdf", "/ex2_35to38.pdf", "/ex2_39to44.pdf", "/ex2_45to47.pdf",
                 "/ex2_48to51.pdf", "/ex2_52to53.pdf", "/ex2_54to57.pdf", "/ex2_58to60.pdf",
                 "/ex2_61to64.pdf", "/ex2_65to68.pdf", "/ex2_69to73.pdf", "/ex2_74.pdf"
-            }
+            },
+            HandMode.RIGHT
         ),
         new SongConfig(
             "練習曲3 (Ex3)",
@@ -720,7 +826,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex3_13to15.pdf", "/ex3_16to18.pdf", "/ex3_19to24.pdf", "/ex3_25to26.pdf",
                 "/ex3_27to32.pdf", "/ex3_33to38.pdf", "/ex3_39to44.pdf", "/ex3_45.pdf",
                 "/ex3_46to48.pdf", "/ex3_49to51.pdf", "/ex3_52to57.pdf", "/ex3_58.pdf"
-            }
+            },
+            HandMode.RIGHT
         ),
         new SongConfig(
             "練習曲4 (Ex4)",
@@ -732,7 +839,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex4_49to51.pdf", "/ex4_52to57.pdf", "/ex4_58to62.pdf", "/ex4_63to64.pdf",
                 "/ex4_65to70.pdf", "/ex4_71to73.pdf", "/ex4_74to78.pdf", "/ex4_79to80.pdf",
                 "/ex4_81to86.pdf", "/ex4_87to89.pdf", "/ex4_90to94.pdf", "/ex4_95.pdf"
-            }
+            },
+            HandMode.RIGHT
         ),
         new SongConfig(
             "練習曲5 (Ex5)",
@@ -742,7 +850,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex5_16to20.pdf", "/ex5_21to27.pdf", "/ex5_28to32.pdf", "/ex5_33to35.pdf",
                 "/ex5_36to40.pdf", "/ex5_41to44.pdf", "/ex5_45to50.pdf", "/ex5_51to56.pdf",
                 "/ex5_57to62.pdf", "/ex5_63to66.pdf", "/ex5_67to74.pdf", "/ex5_75to76.pdf"
-            }
+            },
+            HandMode.RIGHT
         ),
         new SongConfig(
             "練習曲6 (Ex6)",
@@ -752,7 +861,17 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex6_11to14.pdf", "/ex6_15to17.pdf", "/ex6_18to21.pdf", "/ex6_22to23.pdf",
                 "/ex6_24to28.pdf", "/ex6_29to31.pdf", "/ex6_32to36.pdf", "/ex6_37to39.pdf",
                 "/ex6_40to44.pdf", "/ex6_45to50.pdf", "/ex6_51to54.pdf", "/ex6_55to57.pdf"
-            }
+            },
+            HandMode.RIGHT
+        )
+    );
+
+    private static final List<SongConfig> LEFT_SONGS = List.of(
+        new SongConfig(
+            "きらきら星 (Kirakira)",
+            "kirakira_L.mid",
+            new String[0],
+            HandMode.LEFT
         )
     );
 
@@ -768,7 +887,7 @@ public class MyApp extends ImageNotePianoRoll {
             case BACKSPACE -> stopMusic();
         }
 
-        if (key == 's') {
+        if (key == 's' || key == 'S') {
             stopMusic();
             String filename = "C:\\Users\\songo\\PianoPerformanceSupport\\pianoroll-sample\\midi\\" +
                     "subject" + subjectId + "_take" + takeCount + ".mid";
@@ -778,10 +897,17 @@ public class MyApp extends ImageNotePianoRoll {
 
             midiRecorder.reset();
         }
+
+        if (key == 'h' || key == 'H') {
+            setHand(currentHand == HandMode.RIGHT ? HandMode.LEFT : HandMode.RIGHT);
+        }
     }
 
     private void loadSong(SongConfig song) {
         stopMusic();
+        this.currentSongConfig = song;
+        this.currentHand = song.hand;
+        setHandMode(song.hand);
 
         musicData = new MusicData(
                 song.midiFile,
@@ -792,12 +918,25 @@ public class MyApp extends ImageNotePianoRoll {
                 1,
                 12);
 
-        List<Color> colors = new ArrayList<>(Arrays.asList(
-                new Color(255, 50, 80),    // ネオンレッド
-                new Color(255, 120, 0),    // ネオンオレンジ
-                new Color(255, 255, 0),    // ネオンイエロー
-                new Color(50, 255, 150)    // ネオングリーン
-        ));
+        // カラーバーの色（左手と右手で色を変更する）
+        List<Color> colors;
+        if (song.hand == HandMode.LEFT) {
+            // 左手用カラーパレット (ネオンシアン, ネオンブルー, ネオンパープル, ネオンマゼンタ)
+            colors = new ArrayList<>(Arrays.asList(
+                    new Color(0, 210, 255),    // ネオンシアン
+                    new Color(64, 140, 255),   // ネオンブルー
+                    new Color(180, 80, 255),   // ネオンパープル
+                    new Color(255, 60, 200)    // ネオンマゼンタ
+            ));
+        } else {
+            // 右手用カラーパレット (ネオンレッド, ネオンオレンジ, ネオンイエロー, ネオングリーン)
+            colors = new ArrayList<>(Arrays.asList(
+                    new Color(255, 50, 80),    // ネオンレッド
+                    new Color(255, 120, 0),    // ネオンオレンジ
+                    new Color(255, 255, 0),    // ネオンイエロー
+                    new Color(50, 255, 150)    // ネオングリーン
+            ));
+        }
         List<Channel> channels = new ArrayList<Channel>();
         try {
             Arrays.stream(musicData.getScc().toDataSet().getPartList()).forEachOrdered(part -> {
@@ -864,10 +1003,23 @@ public class MyApp extends ImageNotePianoRoll {
         loopJustReset = false;
         isDemoTurn = true;
         currentBlockIndex = 0;
+
         if (twoMeasureRepeatMode) {
-            setPartVolume(100);
+            PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
+            int division = dataModelMultiChannel.getScc().getDivision();
+            int beatNum = dataModelMultiChannel.getBeatNum();
+            int twoMeasureTicks = beatNum * division * 2;
+            prepareDemoTurn(0, twoMeasureTicks);
+            if (performanceData != null) {
+                performanceData.setNotesToPlayForRange(0, twoMeasureTicks);
+            }
         } else {
-            setPartVolume(0);
+            if (musicData != null && musicData.getScc() != null) {
+                cmx.smfread(musicData.getScc());
+            }
+            if (performanceData != null) {
+                performanceData.setNotesToPlay();
+            }
         }
         
         if (rhythmJudge != null) {
