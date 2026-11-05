@@ -39,10 +39,35 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
     }
 
     public enum NoteFigure {
-        WHOLE,   // 全音符（白抜き・棒なし）
-        HALF,    // 2分音符（白抜き・棒あり）
-        QUARTER, // 4分音符（黒塗り・棒あり）
-        EIGHTH   // 8分音符（黒塗り・棒あり・旗あり）
+        WHOLE,     // 全音符（白抜き・棒なし）
+        HALF,      // 2分音符（白抜き・棒あり）
+        QUARTER,   // 4分音符（黒塗り・棒あり）
+        EIGHTH,    // 8分音符（黒塗り・棒あり・旗1本または連桁1本）
+        SIXTEENTH  // 16分音符（黒塗り・棒あり・旗2本または連桁2本）
+    }
+
+    private static class DrawNoteInfo {
+        MutableNote note;
+        float noteX;
+        float noteY;
+        int step;
+        int diff;
+        int notenum;
+        NoteFigure figure;
+        boolean hasDot;
+        int beamLevel; // 0: なし, 1: 8分音符, 2: 16分音符
+        boolean isUpward;
+        float stemBaseX;
+        float stemBaseY;
+        float stemTipX;
+        float stemTipY;
+        BeamGroup beamGroup;
+    }
+
+    private static class BeamGroup {
+        List<DrawNoteInfo> notes = new ArrayList<>();
+        boolean isUpward;
+        float slope;
     }
 
     protected HandMode handMode = HandMode.RIGHT;
@@ -701,8 +726,14 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                     } else if (duration >= 0.625) {
                         figure = NoteFigure.EIGHTH;
                         hasDot = true;
-                    } else {
+                    } else if (duration >= 0.375) {
                         figure = NoteFigure.EIGHTH;
+                        hasDot = false;
+                    } else if (duration >= 0.31) {
+                        figure = NoteFigure.SIXTEENTH;
+                        hasDot = true;
+                    } else {
+                        figure = NoteFigure.SIXTEENTH;
                         hasDot = false;
                     }
 
@@ -725,13 +756,21 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                         stroke(30);
                         strokeWeight(1.2f);
                         line(noteX + 4, noteY, noteX + 4, noteY - 15);
-                    } else {
+                    } else if (figure == NoteFigure.EIGHTH) {
                         noStroke();
                         ellipse(noteX, noteY, 8, 6);
                         stroke(30);
                         strokeWeight(1.2f);
                         line(noteX + 4, noteY, noteX + 4, noteY - 15);
                         line(noteX + 4, noteY - 15, noteX + 8, noteY - 10);
+                    } else { // SIXTEENTH
+                        noStroke();
+                        ellipse(noteX, noteY, 8, 6);
+                        stroke(30);
+                        strokeWeight(1.2f);
+                        line(noteX + 4, noteY, noteX + 4, noteY - 15);
+                        line(noteX + 4, noteY - 15, noteX + 8, noteY - 10);
+                        line(noteX + 4, noteY - 11, noteX + 8, noteY - 6);
                     }
 
                     if (hasDot) {
@@ -1119,6 +1158,8 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
         boolean isLeft = isLeftHand();
         int centerStep = isLeft ? 29 : 41; // ヘ音譜表の中心はD3(step 29)、ト音譜表の中心はB4(step 41)
 
+        List<DrawNoteInfo> noteInfos = new ArrayList<>();
+
         for (jp.kthrlab.pianoroll.Channel channel : dataModelMultiChannel.getChannels()) {
             var part = dataModelMultiChannel.getPart(channel.channel_number);
             if (part == null || part.getNoteOnlyList() == null) continue;
@@ -1136,46 +1177,6 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                     int diff = step - centerStep; 
                     float noteY = staffCenterY - diff * 4.0f;
 
-                    // 臨時記号（シャープ・フラット）のベクター描画（文字化け完全防止）
-                    if ("SHARP".equals(acc.symbol)) {
-                        drawSharp(noteX - 12f, noteY);
-                    } else if ("FLAT".equals(acc.symbol)) {
-                        drawFlat(noteX - 11f, noteY);
-                    }
-
-                    // 加線の描画
-                    pushStyle();
-                    stroke(80);
-                    strokeWeight(1.2f);
-                    if (isLeft) {
-                        // ヘ音記号: E2(step 23)以下、および 中央C(C4, step 35)以上
-                        if (step <= 23) {
-                            for (int s = 23; s >= step; s -= 2) {
-                                float ly = staffCenterY - (s - 29) * 4.0f;
-                                line(noteX - 8, ly, noteX + 8, ly);
-                            }
-                        } else if (step >= 35) {
-                            for (int s = 35; s <= step; s += 2) {
-                                float ly = staffCenterY - (s - 29) * 4.0f;
-                                line(noteX - 8, ly, noteX + 8, ly);
-                            }
-                        }
-                    } else {
-                        // ト音記号: 中央C(C4, step 35)以下、および A5(step 47)以上
-                        if (step <= 35) {
-                            for (int s = 35; s >= step; s -= 2) {
-                                float ly = staffCenterY - (s - 41) * 4.0f;
-                                line(noteX - 8, ly, noteX + 8, ly);
-                            }
-                        } else if (step >= 47) {
-                            for (int s = 47; s <= step; s += 2) {
-                                float ly = staffCenterY - (s - 41) * 4.0f;
-                                line(noteX - 8, ly, noteX + 8, ly);
-                            }
-                        }
-                    }
-                    popStyle();
-
                     // 音符の長さ（音価）と付点判定
                     long stepTicks = getStepTicks(note, part.getNoteOnlyList());
                     double intervalDur = (double) stepTicks / division;
@@ -1187,13 +1188,15 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                         else if (actualDur >= 1.75) duration = 2.0;
                         else if (actualDur >= 1.25) duration = 1.5;
                         else if (actualDur >= 0.75) duration = 1.0;
-                        else duration = 0.5;
+                        else if (actualDur >= 0.35) duration = 0.5;
+                        else duration = 0.25;
                     } else {
                         duration = intervalDur;
                     }
 
                     NoteFigure figure;
                     boolean hasDot = false;
+                    int beamLevel = 0; // 0:なし, 1:8分音符(1本), 2:16分音符(2本)
 
                     if (duration >= 5.5) {
                         figure = NoteFigure.WHOLE;
@@ -1216,60 +1219,295 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                     } else if (duration >= 0.625) {
                         figure = NoteFigure.EIGHTH;
                         hasDot = true; // 付点8分音符 (0.75拍)
-                    } else {
+                        beamLevel = 1;
+                    } else if (duration >= 0.375) {
                         figure = NoteFigure.EIGHTH;
-                        hasDot = false; // 8分音符 (0.5拍以下)
-                    }
-
-                    // 五線譜の第3線（中央の線）以上の音は棒を左側に下向き、第3線未満の音は棒を右側に上向き
-                    boolean isUpward = (step < centerStep);
-
-                    // 1. 符頭の描画
-                    if (figure == NoteFigure.WHOLE || figure == NoteFigure.HALF) {
-                        // 白抜き楕円 (11x8.5px)
-                        stroke(35);
-                        strokeWeight(1.8f);
-                        fill(255);
-                        ellipse(noteX, noteY, 11, 8.5f);
+                        hasDot = false; // 8分音符 (0.5拍)
+                        beamLevel = 1;
+                    } else if (duration >= 0.31) {
+                        figure = NoteFigure.SIXTEENTH;
+                        hasDot = true; // 付点16分音符 (0.375拍)
+                        beamLevel = 2;
                     } else {
-                        // 黒塗り楕円 (11x8.5px)
-                        noStroke();
-                        fill(35);
-                        ellipse(noteX, noteY, 11, 8.5f);
+                        figure = NoteFigure.SIXTEENTH;
+                        hasDot = false; // 16分音符 (0.25拍以下)
+                        beamLevel = 2;
                     }
 
-                    // 2. 符幹（棒）と旗の描画
-                    if (figure != NoteFigure.WHOLE) {
-                        stroke(35);
-                        strokeWeight(1.5f);
-                        if (isUpward) {
-                            line(noteX + 5.5f, noteY, noteX + 5.5f, noteY - 22);
-                            if (figure == NoteFigure.EIGHTH) {
-                                line(noteX + 5.5f, noteY - 22, noteX + 11.5f, noteY - 14);
-                            }
+                    DrawNoteInfo info = new DrawNoteInfo();
+                    info.note = note;
+                    info.noteX = noteX;
+                    info.noteY = noteY;
+                    info.step = step;
+                    info.diff = diff;
+                    info.notenum = notenum;
+                    info.figure = figure;
+                    info.hasDot = hasDot;
+                    info.beamLevel = beamLevel;
+                    info.isUpward = (step < centerStep);
+
+                    noteInfos.add(info);
+                }
+            }
+        }
+
+        // onset 順に整列
+        noteInfos.sort((a, b) -> Long.compare(a.note.onset(), b.note.onset()));
+
+        // === 連桁（Beam）のグルーピング ===
+        // 拍単位（1拍 = division）で連続する8分・16分音符をまとめる
+        long beatTicks = division > 0 ? division : 480;
+        List<BeamGroup> beamGroups = new ArrayList<>();
+        BeamGroup currentGroup = null;
+
+        for (int i = 0; i < noteInfos.size(); i++) {
+            DrawNoteInfo cur = noteInfos.get(i);
+            if (cur.beamLevel > 0) {
+                if (currentGroup == null) {
+                    currentGroup = new BeamGroup();
+                    currentGroup.notes.add(cur);
+                    cur.beamGroup = currentGroup;
+                } else {
+                    DrawNoteInfo prev = currentGroup.notes.get(currentGroup.notes.size() - 1);
+                    int prevBeat = (int) ((prev.note.onset() - T_start) / beatTicks);
+                    int curBeat = (int) ((cur.note.onset() - T_start) / beatTicks);
+
+                    boolean sameBeat = (prevBeat == curBeat);
+                    boolean continuous = (cur.note.onset() - prev.note.onset() <= beatTicks * 0.75);
+
+                    if (sameBeat && continuous) {
+                        currentGroup.notes.add(cur);
+                        cur.beamGroup = currentGroup;
+                    } else {
+                        if (currentGroup.notes.size() >= 2) {
+                            beamGroups.add(currentGroup);
                         } else {
-                            line(noteX - 5.5f, noteY, noteX - 5.5f, noteY + 22);
-                            if (figure == NoteFigure.EIGHTH) {
-                                line(noteX - 5.5f, noteY + 22, noteX, noteY + 14);
-                            }
+                            currentGroup.notes.get(0).beamGroup = null;
                         }
+                        currentGroup = new BeamGroup();
+                        currentGroup.notes.add(cur);
+                        cur.beamGroup = currentGroup;
                     }
+                }
+            } else {
+                if (currentGroup != null) {
+                    if (currentGroup.notes.size() >= 2) {
+                        beamGroups.add(currentGroup);
+                    } else {
+                        currentGroup.notes.get(0).beamGroup = null;
+                    }
+                    currentGroup = null;
+                }
+            }
+        }
+        if (currentGroup != null) {
+            if (currentGroup.notes.size() >= 2) {
+                beamGroups.add(currentGroup);
+            } else {
+                currentGroup.notes.get(0).beamGroup = null;
+            }
+        }
 
-                    // 3. 付点の描画
-                    if (hasDot) {
-                        pushStyle();
-                        noStroke();
-                        fill(35);
-                        // 棒が上向きのときは棒の右側、それ以外は符頭の右側に配置
-                        float dotX = noteX + (isUpward && figure != NoteFigure.WHOLE ? 9.5f : 8.5f);
-                        // 五線の線上の音符は線と重ならないよう上側の間（上へ2px）に少しずらし、間の中なら中心
-                        float dotY = (Math.abs(diff) % 2 == 0) ? (noteY - 2.0f) : noteY;
-                        ellipse(dotX, dotY, 3.2f, 3.2f);
-                        popStyle();
+        // 各連桁グループの向き・傾き・符幹先端位置の計算
+        for (BeamGroup bg : beamGroups) {
+            float avgStep = 0;
+            for (DrawNoteInfo n : bg.notes) {
+                avgStep += n.step;
+            }
+            avgStep /= bg.notes.size();
+            bg.isUpward = (avgStep < centerStep);
+
+            DrawNoteInfo first = bg.notes.get(0);
+            DrawNoteInfo last = bg.notes.get(bg.notes.size() - 1);
+
+            for (DrawNoteInfo n : bg.notes) {
+                n.isUpward = bg.isUpward;
+                n.stemBaseX = n.noteX + (bg.isUpward ? 5.5f : -5.5f);
+                n.stemBaseY = n.noteY;
+            }
+
+            float dx = last.stemBaseX - first.stemBaseX;
+            float dy = last.noteY - first.noteY;
+            float rawSlope = (dx > 0.001f) ? (dy / dx) : 0f;
+            float maxSlope = 0.22f; // 急激な傾きを防止
+            bg.slope = Math.max(-maxSlope, Math.min(maxSlope, rawSlope));
+
+            float baseStemLen = 22.0f;
+            if (bg.isUpward) {
+                float minY0 = Float.POSITIVE_INFINITY;
+                for (DrawNoteInfo n : bg.notes) {
+                    float reqY = (n.noteY - baseStemLen) - bg.slope * (n.stemBaseX - first.stemBaseX);
+                    if (reqY < minY0) minY0 = reqY;
+                }
+                for (DrawNoteInfo n : bg.notes) {
+                    n.stemTipX = n.stemBaseX;
+                    n.stemTipY = minY0 + bg.slope * (n.stemBaseX - first.stemBaseX);
+                }
+            } else {
+                float maxY0 = Float.NEGATIVE_INFINITY;
+                for (DrawNoteInfo n : bg.notes) {
+                    float reqY = (n.noteY + baseStemLen) - bg.slope * (n.stemBaseX - first.stemBaseX);
+                    if (reqY > maxY0) maxY0 = reqY;
+                }
+                for (DrawNoteInfo n : bg.notes) {
+                    n.stemTipX = n.stemBaseX;
+                    n.stemTipY = maxY0 + bg.slope * (n.stemBaseX - first.stemBaseX);
+                }
+            }
+        }
+
+        // 単独音符の符幹位置計算
+        for (DrawNoteInfo n : noteInfos) {
+            if (n.beamGroup == null) {
+                n.isUpward = (n.step < centerStep);
+                n.stemBaseX = n.noteX + (n.isUpward ? 5.5f : -5.5f);
+                n.stemBaseY = n.noteY;
+                n.stemTipX = n.stemBaseX;
+                n.stemTipY = n.noteY + (n.isUpward ? -22.0f : 22.0f);
+            }
+        }
+
+        // === 描画処理 ===
+        pushStyle();
+
+        // 1. 臨時記号・加線・符頭・付点の描画
+        for (DrawNoteInfo n : noteInfos) {
+            NoteAccidental acc = getNoteAccidental(n.notenum);
+            // 臨時記号
+            if ("SHARP".equals(acc.symbol)) {
+                drawSharp(n.noteX - 12f, n.noteY);
+            } else if ("FLAT".equals(acc.symbol)) {
+                drawFlat(n.noteX - 11f, n.noteY);
+            }
+
+            // 加線
+            pushStyle();
+            stroke(80);
+            strokeWeight(1.2f);
+            if (isLeft) {
+                if (n.step <= 23) {
+                    for (int s = 23; s >= n.step; s -= 2) {
+                        float ly = staffCenterY - (s - 29) * 4.0f;
+                        line(n.noteX - 8, ly, n.noteX + 8, ly);
+                    }
+                } else if (n.step >= 35) {
+                    for (int s = 35; s <= n.step; s += 2) {
+                        float ly = staffCenterY - (s - 29) * 4.0f;
+                        line(n.noteX - 8, ly, n.noteX + 8, ly);
+                    }
+                }
+            } else {
+                if (n.step <= 35) {
+                    for (int s = 35; s >= n.step; s -= 2) {
+                        float ly = staffCenterY - (s - 41) * 4.0f;
+                        line(n.noteX - 8, ly, n.noteX + 8, ly);
+                    }
+                } else if (n.step >= 47) {
+                    for (int s = 47; s <= n.step; s += 2) {
+                        float ly = staffCenterY - (s - 41) * 4.0f;
+                        line(n.noteX - 8, ly, n.noteX + 8, ly);
+                    }
+                }
+            }
+            popStyle();
+
+            // 符頭
+            if (n.figure == NoteFigure.WHOLE || n.figure == NoteFigure.HALF) {
+                stroke(35);
+                strokeWeight(1.8f);
+                fill(255);
+                ellipse(n.noteX, n.noteY, 11, 8.5f);
+            } else {
+                noStroke();
+                fill(35);
+                ellipse(n.noteX, n.noteY, 11, 8.5f);
+            }
+
+            // 付点
+            if (n.hasDot) {
+                pushStyle();
+                noStroke();
+                fill(35);
+                float dotX = n.noteX + (n.isUpward && n.figure != NoteFigure.WHOLE ? 9.5f : 8.5f);
+                float dotY = (Math.abs(n.diff) % 2 == 0) ? (n.noteY - 2.0f) : n.noteY;
+                ellipse(dotX, dotY, 3.2f, 3.2f);
+                popStyle();
+            }
+        }
+
+        // 2. 符幹（Stem）の描画
+        stroke(35);
+        strokeWeight(1.5f);
+        for (DrawNoteInfo n : noteInfos) {
+            if (n.figure != NoteFigure.WHOLE) {
+                line(n.stemBaseX, n.stemBaseY, n.stemTipX, n.stemTipY);
+
+                // 単独音符の旗（Flag）描画
+                if (n.beamGroup == null) {
+                    if (n.figure == NoteFigure.EIGHTH) {
+                        if (n.isUpward) {
+                            line(n.stemTipX, n.stemTipY, n.stemTipX + 6.0f, n.stemTipY + 8.0f);
+                        } else {
+                            line(n.stemTipX, n.stemTipY, n.stemTipX + 5.5f, n.stemTipY - 8.0f);
+                        }
+                    } else if (n.figure == NoteFigure.SIXTEENTH) {
+                        if (n.isUpward) {
+                            line(n.stemTipX, n.stemTipY, n.stemTipX + 6.0f, n.stemTipY + 8.0f);
+                            line(n.stemTipX, n.stemTipY + 4.5f, n.stemTipX + 6.0f, n.stemTipY + 12.5f);
+                        } else {
+                            line(n.stemTipX, n.stemTipY, n.stemTipX + 5.5f, n.stemTipY - 8.0f);
+                            line(n.stemTipX, n.stemTipY - 4.5f, n.stemTipX + 5.5f, n.stemTipY - 12.5f);
+                        }
                     }
                 }
             }
         }
+
+        // 3. 連桁（Beam）の描画
+        for (BeamGroup bg : beamGroups) {
+            DrawNoteInfo first = bg.notes.get(0);
+            DrawNoteInfo last = bg.notes.get(bg.notes.size() - 1);
+
+            // 主連桁（Primary Beam）
+            stroke(35);
+            strokeWeight(3.4f);
+            strokeCap(SQUARE);
+            line(first.stemTipX, first.stemTipY, last.stemTipX, last.stemTipY);
+
+            // 副連桁（Secondary Beam: 16分音符用）
+            float subOffset = bg.isUpward ? 4.8f : -4.8f;
+
+            int i = 0;
+            while (i < bg.notes.size()) {
+                if (bg.notes.get(i).beamLevel == 2) {
+                    int startIdx = i;
+                    while (i + 1 < bg.notes.size() && bg.notes.get(i + 1).beamLevel == 2) {
+                        i++;
+                    }
+                    int endIdx = i;
+
+                    if (startIdx < endIdx) {
+                        // 連続する16分音符同士を結ぶ全副連桁
+                        DrawNoteInfo subFirst = bg.notes.get(startIdx);
+                        DrawNoteInfo subLast = bg.notes.get(endIdx);
+                        line(subFirst.stemTipX, subFirst.stemTipY + subOffset,
+                             subLast.stemTipX, subLast.stemTipY + subOffset);
+                    } else {
+                        // 単独の16分音符：内側への小連桁（Partial Beamlet）
+                        DrawNoteInfo single16 = bg.notes.get(startIdx);
+                        float beamletLen = 7.5f;
+                        float dir = (startIdx == 0) ? 1.0f : ((startIdx == bg.notes.size() - 1) ? -1.0f : 1.0f);
+                        float x1 = single16.stemTipX;
+                        float y1 = single16.stemTipY + subOffset;
+                        float x2 = x1 + dir * beamletLen;
+                        float y2 = y1 + bg.slope * dir * beamletLen;
+                        line(x1, y1, x2, y2);
+                    }
+                }
+                i++;
+            }
+        }
+
         popStyle();
     }
 
