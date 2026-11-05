@@ -1,19 +1,19 @@
 package jp.kthrlab.pianorollsample;
 
-import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 
 import jp.crestmuse.cmx.elements.MutableNote;
-import jp.crestmuse.cmx.filewrappers.SCCDataSet;
+import jp.kthrlab.pianoroll.Keyboard;
 import jp.kthrlab.pianoroll.cmx.PianoRollDataModelMultiChannel;
 import jp.kthrlab.pianoroll.processing_cmx.HorizontalPAppletCmxPianoRoll;
-import jp.kthrlab.pianoroll.Keyboard;
 import jp.kthrlab.pianorollsample.ImageNotePianoRoll.PdfDisplay;
 import processing.core.PImage;
 
@@ -38,7 +38,66 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
         LEFT
     }
 
+    public enum NoteFigure {
+        WHOLE,   // 全音符（白抜き・棒なし）
+        HALF,    // 2分音符（白抜き・棒あり）
+        QUARTER, // 4分音符（黒塗り・棒あり）
+        EIGHTH   // 8分音符（黒塗り・棒あり・旗あり）
+    }
+
     protected HandMode handMode = HandMode.RIGHT;
+    protected int beatDenom = 4;
+    protected long pickupTicks = 0; // 弱起（アウフタクト）のTick数（ex2では480、通常は0）
+
+    public int getBeatDenom() {
+        return beatDenom;
+    }
+
+    public void setBeatDenom(int beatDenom) {
+        this.beatDenom = beatDenom;
+    }
+
+    public long getPickupTicks() {
+        return pickupTicks;
+    }
+
+    public void setPickupTicks(long pickupTicks) {
+        this.pickupTicks = pickupTicks;
+    }
+
+    /**
+     * 指定された小節インデックスの開始Tickを返す（弱起対応）
+     */
+    public long getMeasureStartTick(int measureIdx, long measureTicks) {
+        if (pickupTicks <= 0) {
+            return (long) measureIdx * measureTicks;
+        } else {
+            if (measureIdx <= 0) return 0;
+            return pickupTicks + (long) (measureIdx - 1) * measureTicks;
+        }
+    }
+
+    /**
+     * 指定された小節インデックスの小節Tick長を返す（弱起小節は pickupTicks 分の長さ）
+     */
+    public long getMeasureTicksLength(int measureIdx, long measureTicks) {
+        if (pickupTicks > 0 && measureIdx == 0) {
+            return pickupTicks;
+        }
+        return measureTicks;
+    }
+
+    /**
+     * 指定されたTickがどの小節に属するかを返す（弱起対応）
+     */
+    public int getMeasureIndex(long tick, long measureTicks) {
+        if (pickupTicks <= 0) {
+            return (int) (tick / measureTicks);
+        } else {
+            if (tick < pickupTicks) return 0;
+            return 1 + (int) ((tick - pickupTicks) / measureTicks);
+        }
+    }
 
     public HandMode getHandMode() {
         return handMode;
@@ -341,6 +400,120 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
     }
 
     /**
+     * 拍子記号（Time Signature: 例 4/4）を描画する
+     */
+    private void drawTimeSignature(float x, float staffCenterY, int num, int denom) {
+        pushStyle();
+        fill(35);
+        textAlign(CENTER, CENTER);
+        textSize(13);
+        // 分子（上段: 第3間〜第4間）
+        text(String.valueOf(num), x, staffCenterY - 7.5f);
+        // 分母（下段: 第1間〜第2間）
+        text(String.valueOf(denom), x, staffCenterY + 7.5f);
+        popStyle();
+    }
+
+    public static class RestItem {
+        public final long onset;
+        public final double duration;
+        public final boolean isWholeMeasure;
+
+        public RestItem(long onset, double duration, boolean isWholeMeasure) {
+            this.onset = onset;
+            this.duration = duration;
+            this.isWholeMeasure = isWholeMeasure;
+        }
+    }
+
+    /**
+     * 休符を描画する（全休符、2分休符、4分休符、8分休符、付点休符対応）
+     */
+    private void drawRest(float x, float staffCenterY, double duration, boolean isWholeMeasure) {
+        pushStyle();
+        if (isWholeMeasure || duration >= 3.5) {
+            // 全休符 (Whole Rest): 第4線（staffCenterY - 8）から下にぶら下がる四角形
+            fill(35);
+            noStroke();
+            rect(x - 5.5f, staffCenterY - 8.0f, 11f, 4.5f);
+        } else if (duration >= 2.5) {
+            // 付点2分休符 (Dotted Half Rest): 第3線（staffCenterY）の上に載る四角形 + 付点
+            fill(35);
+            noStroke();
+            rect(x - 5.5f, staffCenterY - 4.5f, 11f, 4.5f);
+            ellipse(x + 9.5f, staffCenterY - 4.0f, 3.2f, 3.2f);
+        } else if (duration >= 1.75) {
+            // 2分休符 (Half Rest): 第3線（staffCenterY）の上に載る四角形
+            fill(35);
+            noStroke();
+            rect(x - 5.5f, staffCenterY - 4.5f, 11f, 4.5f);
+        } else if (duration >= 1.25) {
+            // 付点4分休符 (Dotted Quarter Rest): 4分休符 + 付点
+            drawQuarterRestVector(x, staffCenterY);
+            fill(35);
+            noStroke();
+            ellipse(x + 8.5f, staffCenterY - 4.0f, 3.2f, 3.2f);
+        } else if (duration >= 0.75) {
+            // 4分休符 (Quarter Rest): ジグザグ型ベクター
+            drawQuarterRestVector(x, staffCenterY);
+        } else {
+            // 8分休符 (Eighth Rest): フック型ベクター
+            drawEighthRestVector(x, staffCenterY);
+        }
+        popStyle();
+    }
+
+    /**
+     * 4分休符のベクター描画（ジグザグ形状）
+     */
+    private void drawQuarterRestVector(float x, float staffCenterY) {
+        pushStyle();
+        stroke(35);
+        strokeWeight(2.0f);
+        strokeCap(ROUND);
+        strokeJoin(ROUND);
+        noFill();
+        beginShape();
+        vertex(x + 2.0f, staffCenterY - 11.5f);
+        vertex(x - 3.5f, staffCenterY - 4.0f);
+        vertex(x + 3.0f, staffCenterY + 1.5f);
+        vertex(x - 2.5f, staffCenterY + 7.0f);
+        endShape();
+
+        // 下部のフック（曲線）
+        strokeWeight(1.8f);
+        arc(x - 2.2f, staffCenterY + 9.0f, 5.0f, 5.5f, PI * 0.35f, PI * 1.35f);
+        fill(35);
+        noStroke();
+        ellipse(x - 2.5f, staffCenterY + 6.8f, 3.0f, 3.0f);
+        popStyle();
+    }
+
+    /**
+     * 8分休符のベクター描画（フック形状）
+     */
+    private void drawEighthRestVector(float x, float staffCenterY) {
+        pushStyle();
+        // 第3間の黒丸
+        fill(35);
+        noStroke();
+        ellipse(x - 2.0f, staffCenterY - 4.0f, 3.6f, 3.6f);
+
+        stroke(35);
+        strokeWeight(1.8f);
+        strokeCap(ROUND);
+        noFill();
+        // 右上へのアーチ
+        bezier(x - 2.0f, staffCenterY - 5.5f,
+               x, staffCenterY - 8.5f,
+               x + 2.5f, staffCenterY - 7.5f,
+               x + 3.0f, staffCenterY - 4.0f);
+        // 右上から左下へのスラッシュ軸棒
+        line(x + 3.0f, staffCenterY - 4.0f, x - 2.5f, staffCenterY + 8.0f);
+        popStyle();
+    }
+
+    /**
      *  指定されたノートから、同じパート内で次に onset が異なるノートまでのtickを求める。
      */
     private long getStepTicks(MutableNote note, MutableNote[] allNotes) {
@@ -394,8 +567,6 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
         line(startX, trebleCenterY - 10, startX, bassCenterY + 10);
         line(endX, trebleCenterY - 10, endX, bassCenterY + 10);
 
-
-
         // 小節に含まれるノートの収集と描画
         int division = dataModelMultiChannel.getScc().getDivision();
         int beatNum = dataModelMultiChannel.getBeatNum();
@@ -443,11 +614,12 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                     // Y座標算出
                     int step = getDiatonicStep(notenum);
                     float noteY;
+                    int diff;
                     if (isTreble) {
-                        int diff = step - 41; // B4(step 41)基準
+                        diff = step - 41; // B4(step 41)基準
                         noteY = trebleCenterY - diff * 2.5f;
                     } else {
-                        int diff = step - 29; // D3(step 29)基準
+                        diff = step - 29; // D3(step 29)基準
                         noteY = bassCenterY - diff * 2.5f;
                     }
 
@@ -489,40 +661,87 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                         }
                     }
 
-                    // 音符の長さ（音価）の判定
+                    // 音符の長さ（音価）と付点判定
                     long stepTicks = getStepTicks(note, part.getNoteOnlyList());
-                    double duration = (double) stepTicks / division;
+                    double intervalDur = (double) stepTicks / division;
+                    double actualDur = (double) (note.offset() - note.onset()) / division;
+
+                    double duration;
+                    if (intervalDur >= 0.85 && actualDur <= intervalDur - 0.4) {
+                        if (actualDur >= 2.5) duration = 3.0;
+                        else if (actualDur >= 1.75) duration = 2.0;
+                        else if (actualDur >= 1.25) duration = 1.5;
+                        else if (actualDur >= 0.75) duration = 1.0;
+                        else duration = 0.5;
+                    } else {
+                        duration = intervalDur;
+                    }
+
+                    NoteFigure figure;
+                    boolean hasDot = false;
+
+                    if (duration >= 5.5) {
+                        figure = NoteFigure.WHOLE;
+                        hasDot = true;
+                    } else if (duration >= 3.5) {
+                        figure = NoteFigure.WHOLE;
+                        hasDot = false;
+                    } else if (duration >= 2.5) {
+                        figure = NoteFigure.HALF;
+                        hasDot = true;
+                    } else if (duration >= 1.75) {
+                        figure = NoteFigure.HALF;
+                        hasDot = false;
+                    } else if (duration >= 1.25) {
+                        figure = NoteFigure.QUARTER;
+                        hasDot = true;
+                    } else if (duration >= 0.85) {
+                        figure = NoteFigure.QUARTER;
+                        hasDot = false;
+                    } else if (duration >= 0.625) {
+                        figure = NoteFigure.EIGHTH;
+                        hasDot = true;
+                    } else {
+                        figure = NoteFigure.EIGHTH;
+                        hasDot = false;
+                    }
 
                     stroke(30);
                     fill(30);
 
-                    if (duration >= 3.0) {
-                        // 全音符: 白抜き楕円、棒なし
+                    if (figure == NoteFigure.WHOLE) {
                         strokeWeight(1.5f);
                         fill(255);
                         ellipse(noteX, noteY, 8, 6);
-                    } else if (duration >= 1.5) {
-                        // 2分音符: 白抜き楕円 + 棒
+                    } else if (figure == NoteFigure.HALF) {
                         strokeWeight(1.5f);
                         fill(255);
                         ellipse(noteX, noteY, 8, 6);
                         strokeWeight(1.2f);
                         line(noteX + 4, noteY, noteX + 4, noteY - 15);
-                    } else if (duration >= 0.75) {
-                        // 4分音符: 黒塗り楕円 + 棒
+                    } else if (figure == NoteFigure.QUARTER) {
                         noStroke();
                         ellipse(noteX, noteY, 8, 6);
                         stroke(30);
                         strokeWeight(1.2f);
                         line(noteX + 4, noteY, noteX + 4, noteY - 15);
                     } else {
-                        // 8分音符以下: 黒塗り楕円 + 棒 + 旗
                         noStroke();
                         ellipse(noteX, noteY, 8, 6);
                         stroke(30);
                         strokeWeight(1.2f);
                         line(noteX + 4, noteY, noteX + 4, noteY - 15);
                         line(noteX + 4, noteY - 15, noteX + 8, noteY - 10);
+                    }
+
+                    if (hasDot) {
+                        pushStyle();
+                        noStroke();
+                        fill(30);
+                        float dotX = noteX + 7.0f;
+                        float dotY = (Math.abs(diff) % 2 == 0) ? (noteY - 1.5f) : noteY;
+                        ellipse(dotX, dotY, 2.5f, 2.5f);
+                        popStyle();
                     }
                 }
             }
@@ -610,6 +829,10 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
         return true;
     }
 
+    protected boolean isMaskEnabled() {
+        return true;
+    }
+
     protected int getTotalMeasures() {
         if (dataModel == null) return 0;
         PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
@@ -628,7 +851,12 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                 }
             }
         });
-        return (int) Math.ceil((double) maxTick[0] / measureTicks);
+        if (pickupTicks <= 0) {
+            return (int) Math.ceil((double) maxTick[0] / measureTicks);
+        } else {
+            if (maxTick[0] <= pickupTicks) return 1;
+            return 1 + (int) Math.ceil((double) (maxTick[0] - pickupTicks) / measureTicks);
+        }
     }
 
     /**
@@ -636,7 +864,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
      * その小節のノート範囲にhighlightIndexesの対象が含まれていればマスクする。
      */
     private boolean isMeasureHighlighted(int measureIdx) {
-        if (!isLearningMode()) return false; // ラーニングモード以外は目隠ししない
+        if (!isMaskEnabled()) return false;
         if (dataModel == null) return false;
 
         PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
@@ -650,7 +878,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
         if (part != null && part.getNoteOnlyList() != null) {
             var notes = part.getNoteOnlyList();
             for (int i = 0; i < notes.length; i++) {
-                int noteMeasure = (int) (notes[i].onset() / measureTicks);
+                int noteMeasure = getMeasureIndex(notes[i].onset(), measureTicks);
                 if (noteMeasure == measureIdx && highlightIndexes.contains(i)) {
                     return true;
                 }
@@ -753,8 +981,15 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
         // 音符とタイムラインの描画パラメータ
         int beatNum = dataModelMultiChannel.getBeatNum();
         int division = dataModelMultiChannel.getScc().getDivision();
-        long measureTicks = (long) beatNum * division;
-        if (measureTicks <= 0) measureTicks = 1920;
+        long baseMeasureTicks = (long) beatNum * division;
+        if (baseMeasureTicks <= 0) baseMeasureTicks = 1920;
+        long measureTicks = getMeasureTicksLength(measureIdx, baseMeasureTicks);
+
+        // 拍子記号の描画（曲の冒頭 measureIdx == 0 のみ表示）
+        boolean showTimeSig = (measureIdx == 0);
+        if (showTimeSig) {
+            drawTimeSignature(startX + 23f, staffCenterY, beatNum, beatDenom);
+        }
 
         // 次の音を待機しているとき（停止中や待機中）は、打鍵待ち対象音符のOnsetにピタッと完全スナップ
         if (performanceData != null && (!getCmx().isNowPlaying() || isLearningMode())) {
@@ -766,7 +1001,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
             }
         }
 
-        float marginL = 35f; // 小節左端からの余白（音部記号の右側）
+        float marginL = showTimeSig ? 44f : 35f; // 拍子記号がある場合は余白を少し広げる
         float marginR = 25f; // 小節右端への余白
         float playableW = scoreW - marginL - marginR;
 
@@ -796,6 +1031,88 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
             triangle(cursorX - 4, lineTopY - 4, cursorX + 4, lineTopY - 4, cursorX, lineTopY + 1);
             triangle(cursorX - 4, lineBottomY + 4, cursorX + 4, lineBottomY + 4, cursorX, lineBottomY - 1);
             popStyle();
+        }
+
+        // === 休符の検出と描画 ===
+        List<MutableNote> measureNotes = new ArrayList<>();
+        for (jp.kthrlab.pianoroll.Channel channel : dataModelMultiChannel.getChannels()) {
+            var part = dataModelMultiChannel.getPart(channel.channel_number);
+            if (part == null || part.getNoteOnlyList() == null) continue;
+            for (var note : part.getNoteOnlyList()) {
+                if (note.onset() >= T_start && note.onset() < T_start + measureTicks) {
+                    measureNotes.add(note);
+                }
+            }
+        }
+
+        List<RestItem> rests = new ArrayList<>();
+        if (measureNotes.isEmpty()) {
+            // 1小節まるごと休み（全休符）
+            rests.add(new RestItem(T_start, (double) beatNum, true));
+        } else {
+            measureNotes.sort((a, b) -> Long.compare(a.onset(), b.onset()));
+
+            List<Long> uniqueOnsets = new ArrayList<>();
+            Map<Long, Long> onsetToMaxOffset = new HashMap<>();
+            for (MutableNote note : measureNotes) {
+                long o = note.onset();
+                long off = note.offset();
+                if (!onsetToMaxOffset.containsKey(o)) {
+                    uniqueOnsets.add(o);
+                    onsetToMaxOffset.put(o, off);
+                } else {
+                    if (off > onsetToMaxOffset.get(o)) {
+                        onsetToMaxOffset.put(o, off);
+                    }
+                }
+            }
+
+            // A. 小節頭の休符
+            long firstOnset = uniqueOnsets.get(0);
+            long preGapTicks = firstOnset - T_start;
+            double preGapDur = (double) preGapTicks / division;
+            if (preGapDur >= 0.35) {
+                rests.add(new RestItem(T_start, preGapDur, false));
+            }
+
+            // B. 音符間および小節末までの休符
+            for (int i = 0; i < uniqueOnsets.size(); i++) {
+                long curOnset = uniqueOnsets.get(i);
+                long maxOff = onsetToMaxOffset.get(curOnset);
+                long nextStart = (i + 1 < uniqueOnsets.size()) ? uniqueOnsets.get(i + 1) : (T_start + measureTicks);
+
+                double rawDur = (double) (maxOff - curOnset) / division;
+                double intervalDur = (double) (nextStart - curOnset) / division;
+
+                if (intervalDur >= 0.85 && rawDur <= intervalDur - 0.4) {
+                    double noteDur;
+                    if (rawDur >= 2.5) noteDur = 3.0;
+                    else if (rawDur >= 1.75) noteDur = 2.0;
+                    else if (rawDur >= 1.25) noteDur = 1.5;
+                    else if (rawDur >= 0.75) noteDur = 1.0;
+                    else noteDur = 0.5;
+
+                    if (noteDur < intervalDur) {
+                        double restDur = intervalDur - noteDur;
+                        if (restDur >= 0.35) {
+                            long restOnset = curOnset + (long) (noteDur * division);
+                            rests.add(new RestItem(restOnset, restDur, false));
+                        }
+                    }
+                }
+            }
+        }
+
+        // 休符を描画
+        for (RestItem rest : rests) {
+            float restX;
+            if (rest.isWholeMeasure) {
+                restX = startX + marginL + playableW * 0.45f;
+            } else {
+                double relOnset = rest.onset - T_start;
+                restX = startX + marginL + (float) (relOnset / measureTicks) * playableW;
+            }
+            drawRest(restX, staffCenterY, rest.duration, rest.isWholeMeasure);
         }
 
         // 音符の描画（赤い縦線の手前・最前面に描画）
@@ -859,57 +1176,96 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                     }
                     popStyle();
 
-                    // 音符の長さ（音価）の判定
+                    // 音符の長さ（音価）と付点判定
                     long stepTicks = getStepTicks(note, part.getNoteOnlyList());
-                    double duration = (double) stepTicks / division;
+                    double intervalDur = (double) stepTicks / division;
+                    double actualDur = (double) (note.offset() - note.onset()) / division;
+
+                    double duration;
+                    if (intervalDur >= 0.85 && actualDur <= intervalDur - 0.4) {
+                        if (actualDur >= 2.5) duration = 3.0;
+                        else if (actualDur >= 1.75) duration = 2.0;
+                        else if (actualDur >= 1.25) duration = 1.5;
+                        else if (actualDur >= 0.75) duration = 1.0;
+                        else duration = 0.5;
+                    } else {
+                        duration = intervalDur;
+                    }
+
+                    NoteFigure figure;
+                    boolean hasDot = false;
+
+                    if (duration >= 5.5) {
+                        figure = NoteFigure.WHOLE;
+                        hasDot = true; // 付点全音符 (6拍など)
+                    } else if (duration >= 3.5) {
+                        figure = NoteFigure.WHOLE;
+                        hasDot = false; // 全音符 (4拍)
+                    } else if (duration >= 2.5) {
+                        figure = NoteFigure.HALF;
+                        hasDot = true; // 付点2分音符 (3拍)
+                    } else if (duration >= 1.75) {
+                        figure = NoteFigure.HALF;
+                        hasDot = false; // 2分音符 (2拍)
+                    } else if (duration >= 1.25) {
+                        figure = NoteFigure.QUARTER;
+                        hasDot = true; // 付点4分音符 (1.5拍)
+                    } else if (duration >= 0.85) {
+                        figure = NoteFigure.QUARTER;
+                        hasDot = false; // 4分音符 (1拍)
+                    } else if (duration >= 0.625) {
+                        figure = NoteFigure.EIGHTH;
+                        hasDot = true; // 付点8分音符 (0.75拍)
+                    } else {
+                        figure = NoteFigure.EIGHTH;
+                        hasDot = false; // 8分音符 (0.5拍以下)
+                    }
 
                     // 五線譜の第3線（中央の線）以上の音は棒を左側に下向き、第3線未満の音は棒を右側に上向き
                     boolean isUpward = (step < centerStep);
 
-                    if (duration >= 3.0) {
-                        // 全音符: 白抜き楕円、棒なし (11x8.5px)
+                    // 1. 符頭の描画
+                    if (figure == NoteFigure.WHOLE || figure == NoteFigure.HALF) {
+                        // 白抜き楕円 (11x8.5px)
                         stroke(35);
                         strokeWeight(1.8f);
                         fill(255);
                         ellipse(noteX, noteY, 11, 8.5f);
-                    } else if (duration >= 1.5) {
-                        // 2分音符: 白抜き楕円 + 棒
-                        stroke(35);
-                        strokeWeight(1.8f);
-                        fill(255);
-                        ellipse(noteX, noteY, 11, 8.5f);
-                        strokeWeight(1.5f);
-                        if (isUpward) {
-                            line(noteX + 5.5f, noteY, noteX + 5.5f, noteY - 22);
-                        } else {
-                            line(noteX - 5.5f, noteY, noteX - 5.5f, noteY + 22);
-                        }
-                    } else if (duration >= 0.75) {
-                        // 4分音符: 黒塗り楕円 + 棒
-                        noStroke();
-                        fill(35);
-                        ellipse(noteX, noteY, 11, 8.5f);
-                        stroke(35);
-                        strokeWeight(1.5f);
-                        if (isUpward) {
-                            line(noteX + 5.5f, noteY, noteX + 5.5f, noteY - 22);
-                        } else {
-                            line(noteX - 5.5f, noteY, noteX - 5.5f, noteY + 22);
-                        }
                     } else {
-                        // 8分音符以下: 黒塗り楕円 + 棒 + 旗
+                        // 黒塗り楕円 (11x8.5px)
                         noStroke();
                         fill(35);
                         ellipse(noteX, noteY, 11, 8.5f);
+                    }
+
+                    // 2. 符幹（棒）と旗の描画
+                    if (figure != NoteFigure.WHOLE) {
                         stroke(35);
                         strokeWeight(1.5f);
                         if (isUpward) {
                             line(noteX + 5.5f, noteY, noteX + 5.5f, noteY - 22);
-                            line(noteX + 5.5f, noteY - 22, noteX + 11.5f, noteY - 14);
+                            if (figure == NoteFigure.EIGHTH) {
+                                line(noteX + 5.5f, noteY - 22, noteX + 11.5f, noteY - 14);
+                            }
                         } else {
                             line(noteX - 5.5f, noteY, noteX - 5.5f, noteY + 22);
-                            line(noteX - 5.5f, noteY + 22, noteX, noteY + 14);
+                            if (figure == NoteFigure.EIGHTH) {
+                                line(noteX - 5.5f, noteY + 22, noteX, noteY + 14);
+                            }
                         }
+                    }
+
+                    // 3. 付点の描画
+                    if (hasDot) {
+                        pushStyle();
+                        noStroke();
+                        fill(35);
+                        // 棒が上向きのときは棒の右側、それ以外は符頭の右側に配置
+                        float dotX = noteX + (isUpward && figure != NoteFigure.WHOLE ? 9.5f : 8.5f);
+                        // 五線の線上の音符は線と重ならないよう上側の間（上へ2px）に少しずらし、間の中なら中心
+                        float dotY = (Math.abs(diff) % 2 == 0) ? (noteY - 2.0f) : noteY;
+                        ellipse(dotX, dotY, 3.2f, 3.2f);
+                        popStyle();
                     }
                 }
             }
@@ -949,8 +1305,8 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
                     if (y + h < 0 || y > timelineHeight) continue;
 
                     // このノートが属する小節が非表示されている場合は隠す
-                    int noteMeasure = (int) (note.onset() / measureTicks);
-                    if (isLearningMode() && isMeasureHighlighted(noteMeasure)) {
+                    int noteMeasure = getMeasureIndex(note.onset(), measureTicks);
+                    if (isMeasureHighlighted(noteMeasure)) {
                         continue;
                     }
 
@@ -1037,7 +1393,7 @@ public class ImageNotePianoRoll extends HorizontalPAppletCmxPianoRoll {
             popStyle();
 
             // この小節が非表示対象かどうかを判定して楽譜を非表示
-            if (isLearningMode() && isMeasureHighlighted(m)) {
+            if (isMeasureHighlighted(m)) {
                 pushStyle();
                 noStroke();
                 fill(255, 140, 0, 12);// オレンジ

@@ -41,8 +41,9 @@ public class MyApp extends ImageNotePianoRoll {
 
     // String rhythmState = "NONE";
     double rhythmDiff = 0.0;
+    int currentMode = 0; // 0: Learning Mode, 1: Rhythm Mode
     boolean rhythmMode = false;
-    boolean twoMeasureRepeatMode = false; // 2小節交代リズム習得モード
+    boolean twoMeasureRepeatMode = true; // 2小節交代モード（全モード共通）
     boolean isDemoTurn = true;           // true: お手本ターン, false: 演奏ターン
     int currentBlockIndex = 0;          // 現在の2小節ブロック番号
     String lastRhythmResult = "NONE";
@@ -56,9 +57,9 @@ public class MyApp extends ImageNotePianoRoll {
     private float handTabY = 22;
     private float handTabH = 26;
 
-    // モードタブの配置座標情報 (クリック判定用)
-    private float[] tabX = new float[3];
-    private float[] tabW = new float[3];
+    // モードタブの配置座標情報 (クリック判定用: Learning, Rhythm)
+    private float[] tabX = new float[2];
+    private float[] tabW = new float[2];
     private float tabY = 22;
     private float tabH = 26;
 
@@ -110,7 +111,12 @@ public class MyApp extends ImageNotePianoRoll {
 
     @Override
     protected boolean isLearningMode() {
-        return !rhythmMode && !twoMeasureRepeatMode;
+        return true;
+    }
+
+    @Override
+    protected boolean isMaskEnabled() {
+        return true;
     }
 
     @Override
@@ -119,107 +125,106 @@ public class MyApp extends ImageNotePianoRoll {
 
         long tickPosition = cmx.getTickPosition();
 
-        if (twoMeasureRepeatMode) {
-            PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
-            if (dataModelMultiChannel != null) {
-                int division = dataModelMultiChannel.getScc().getDivision();
-                int beatNum = dataModelMultiChannel.getBeatNum();
-                int measureTicks = beatNum * division;
-                int twoMeasureTicks = measureTicks * 2;
+        // Learning Mode & Rhythm Mode 共通: 2小節交代（お手本→演奏）＆周回ごとの目隠し暗記学習
+        PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
+        if (dataModelMultiChannel != null) {
+            int division = dataModelMultiChannel.getScc().getDivision();
+            int beatNum = dataModelMultiChannel.getBeatNum();
+            int measureTicks = beatNum * division;
+            int twoMeasureTicks = measureTicks * 2;
 
-                int totalMeasures = getTotalMeasures();
-                int totalBlocks = (int) Math.ceil((double) totalMeasures / 2.0);
-                if (totalBlocks <= 0) totalBlocks = 1;
+            int totalMeasures = getTotalMeasures();
+            int totalBlocks = (int) Math.ceil((double) totalMeasures / 2.0);
+            if (totalBlocks <= 0) totalBlocks = 1;
 
-                // 曲末尾に達した際の2周目への安全リセット
-                if (cmx.getMicrosecondPosition() >= cmx.getMicrosecondLength() && cmx.getMicrosecondLength() > 0) {
-                    currentBlockIndex = 0;
-                    isDemoTurn = true;
-                    prepareDemoTurn(0, twoMeasureTicks);
-                    performanceData.setNotesToPlayForRange(0, twoMeasureTicks);
-                    cmx.setTickPosition(0);
-                    lastTickPosition = 0;
-                    tickPosition = 0;
-                }
-
-                if (currentBlockIndex >= totalBlocks) {
-                    currentBlockIndex = 0;
-                }
-
-                long blockStartTick = (long) currentBlockIndex * twoMeasureTicks;
-                long blockEndTick = blockStartTick + twoMeasureTicks;
-
-                if (isDemoTurn) {
-                    //  お手本ターン (2小節)  有音でお手本を自動再生
-                    if (!cmx.isNowPlaying()) {
-                        cmx.playMusic();
-                    }
-
-                    // 次のブロックの1音目(blockEndTick)のonsetに届く前に、15 Tick手前の安全タイミングで先回り停止
-                    long safeStopTick = Math.max(blockStartTick, blockEndTick - 15);
-
-                    if (tickPosition >= safeStopTick) {
-                        stopMusic();
-                        silenceAllChannels();
-                        performanceData.setNotesToPlayForRange(blockStartTick, blockEndTick);
-                        cmx.setTickPosition(blockStartTick);
-                        lastTickPosition = blockStartTick;
-                        isDemoTurn = false; // 演奏ターンへ移行
-                    }
-                } else {
-                    //  演奏ターン (2小節)  CMXは消音、自分の打鍵音のみが鳴る
-                    LongStream.rangeClosed(lastTickPosition, tickPosition).forEach(tick -> {
-                        if (performanceData.hasNotesToPlay(tick)) {
-                            stopMusic(); // 未演奏ノートがあれば停止して待機
-                        } else {
-                            startMusic();
-                        }
-                    });
-
-                    if (tickPosition >= blockEndTick && tickPosition >= blockStartTick) {
-                        stopMusic();
-                        silenceAllChannels();
-                        currentBlockIndex++;
-
-                        if (currentBlockIndex >= totalBlocks) {
-                            currentBlockIndex = 0;
-                        }
-
-                        long nextBlockStartTick = (long) currentBlockIndex * twoMeasureTicks;
-                        long nextBlockEndTick = nextBlockStartTick + twoMeasureTicks;
-
-                        // 次のお手本ターンへ移行：この2小節のみ有音化＆末尾で音量0カットしたSCCを準備
-                        prepareDemoTurn(nextBlockStartTick, nextBlockEndTick);
-                        performanceData.setNotesToPlayForRange(nextBlockStartTick, nextBlockEndTick);
-                        // 1音目の発音抜けを完全防止するため、シーク位置を音符onsetの5 Tick手前にセット
-                        long demoSeekTick = Math.max(0, nextBlockStartTick - (nextBlockStartTick > 0 ? 5 : 0));
-                        cmx.setTickPosition(demoSeekTick);
-                        lastTickPosition = nextBlockStartTick;
-                        isDemoTurn = true; // 次のブロックのお手本ターンへ移行
-                    }
-                }
-            }
-            lastTickPosition = tickPosition;
-        } else {
-            //  Learning Mode & Rhythm Mode 
-            setPartVolume(0);
+            // 曲末尾に達した際の2周目への安全リセット
             if (cmx.getMicrosecondPosition() >= cmx.getMicrosecondLength() && cmx.getMicrosecondLength() > 0) {
-                rhythmJudge.reset();
-                loopJustReset = true;
-                performanceData.setNotesToPlay();
-                cmx.setTickPosition(0); // 再生位置を先頭に戻す
+                currentBlockIndex = 0;
+                isDemoTurn = true;
+                prepareDemoTurn(0, twoMeasureTicks);
+                performanceData.setNotesToPlayForRange(0, twoMeasureTicks);
+                if (rhythmJudge != null) {
+                    rhythmJudge.reset();
+                }
+                cmx.setTickPosition(0);
+                lastTickPosition = 0;
                 tickPosition = 0;
+
+                // 周回更新：小節の目隠し（暗記用マスク）を増加（Learning & Rhythm Mode）
+                if (isMaskEnabled()) {
+                    loopCount++;
+                    currentHideRate = Math.min(1.0, loopCount * hideStep);
+                    updateHighlightByRate(currentHideRate);
+                }
             }
 
-            LongStream.rangeClosed(lastTickPosition, tickPosition).forEach(tick -> {
-                if (performanceData.hasNotesToPlay(tick)) {
-                    stopMusic(); // ノートが残っていれば停止
-                } else {
-                    startMusic(); // すべて演奏済みなら再開
+            if (currentBlockIndex >= totalBlocks) {
+                currentBlockIndex = 0;
+            }
+
+            long blockStartTick = (long) currentBlockIndex * twoMeasureTicks;
+            long blockEndTick = blockStartTick + twoMeasureTicks;
+
+            if (isDemoTurn) {
+                //  お手本ターン (2小節)  有音でお手本を自動再生
+                if (!cmx.isNowPlaying()) {
+                    cmx.playMusic();
                 }
-            });
-            lastTickPosition = tickPosition;
+
+                // 次のブロックの1音目(blockEndTick)のonsetに届く前に、15 Tick手前の安全タイミングで先回り停止
+                long safeStopTick = Math.max(blockStartTick, blockEndTick - 15);
+
+                if (tickPosition >= safeStopTick) {
+                    stopMusic();
+                    silenceAllChannels();
+                    performanceData.setNotesToPlayForRange(blockStartTick, blockEndTick);
+                    if (rhythmJudge != null) {
+                        rhythmJudge.resetForTick(blockStartTick);
+                    }
+                    cmx.setTickPosition(blockStartTick);
+                    lastTickPosition = blockStartTick;
+                    isDemoTurn = false; // 演奏ターンへ移行
+                }
+            } else {
+                //  演奏ターン (2小節)  CMXは消音、未演奏ノートがあれば停止して打鍵待ち
+                LongStream.rangeClosed(lastTickPosition, tickPosition).forEach(tick -> {
+                    if (performanceData.hasNotesToPlay(tick)) {
+                        stopMusic(); // 未演奏ノートがあれば停止して打鍵待ち
+                    } else {
+                        startMusic();
+                    }
+                });
+
+                if (tickPosition >= blockEndTick && tickPosition >= blockStartTick) {
+                    stopMusic();
+                    silenceAllChannels();
+                    currentBlockIndex++;
+
+                    if (currentBlockIndex >= totalBlocks) {
+                        currentBlockIndex = 0;
+                        // 1周（全ブロック）完了！周回ごとの目隠し（暗記用マスク）を更新（Learning & Rhythm Mode）
+                        if (isMaskEnabled()) {
+                            loopCount++;
+                            currentHideRate = Math.min(1.0, loopCount * hideStep);
+                            updateHighlightByRate(currentHideRate);
+                        }
+                    }
+
+                    long nextBlockStartTick = (long) currentBlockIndex * twoMeasureTicks;
+                    long nextBlockEndTick = nextBlockStartTick + twoMeasureTicks;
+
+                    // 次のお手本ターンへ移行：この2小節のみ有音化＆末尾で音量0カットしたSCCを準備
+                    prepareDemoTurn(nextBlockStartTick, nextBlockEndTick);
+                    performanceData.setNotesToPlayForRange(nextBlockStartTick, nextBlockEndTick);
+                    // 1音目の発音抜けを完全防止するため、シーク位置を音符onsetの5 Tick手前にセット
+                    long demoSeekTick = Math.max(0, nextBlockStartTick - (nextBlockStartTick > 0 ? 5 : 0));
+                    cmx.setTickPosition(demoSeekTick);
+                    lastTickPosition = nextBlockStartTick;
+                    isDemoTurn = true; // 次のブロックのお手本ターンへ移行
+                }
+            }
         }
+        lastTickPosition = tickPosition;
 
         // === 停止時フラッシュ表示 === ★
         if (flash) {
@@ -234,7 +239,7 @@ public class MyApp extends ImageNotePianoRoll {
                     case "OK":
                         r = 0;
                         g = 180;
-                        b = 255; // 青（正解）
+                        b = 255; // 青（正常・タイミング一致）
                         break;
 
                     case "EARLY":
@@ -245,14 +250,14 @@ public class MyApp extends ImageNotePianoRoll {
 
                     case "LATE":
                         r = 255;
-                        g = 80;
-                        b = 80; // 赤（遅い）
+                        g = 170;
+                        b = 0; // 鮮やかなオレンジ・イエロー（遅い）
                         break;
 
                     case "WRONG_NOTE":
                         r = 255;
-                        g = 0;
-                        b = 0; // 赤強め（ミス）
+                        g = 20;
+                        b = 30; // 鮮烈な赤（誤音階・ミス）
                         break;
 
                     default:
@@ -281,7 +286,7 @@ public class MyApp extends ImageNotePianoRoll {
         if (loopJustReset) {
             loopJustReset = false;
 
-            if (!rhythmMode && !twoMeasureRepeatMode) {
+            if (!rhythmMode) {
                 loopCount++;
                 currentHideRate = Math.min(1.0, loopCount * hideStep);
                 updateHighlightByRate(currentHideRate);
@@ -298,13 +303,16 @@ public class MyApp extends ImageNotePianoRoll {
         textAlign(CENTER, CENTER);
 
         String[] handLabels = new String[]{"Right Hand", "Left Hand"};
-        String[] tabLabels = new String[3];
-        tabLabels[0] = "Learning Mode";
-        tabLabels[1] = "Rhythm Mode";
-        if (twoMeasureRepeatMode) {
-            tabLabels[2] = isDemoTurn ? "2-Measure (DEMO)" : "2-Measure (PLAY)";
+        String[] tabLabels = new String[2];
+        if (currentMode == 0) {
+            tabLabels[0] = isDemoTurn ? "Learning (DEMO)" : "Learning (PLAY)";
         } else {
-            tabLabels[2] = "2-Measure Repeat";
+            tabLabels[0] = "Learning Mode";
+        }
+        if (currentMode == 1) {
+            tabLabels[1] = isDemoTurn ? "Rhythm (DEMO)" : "Rhythm (PLAY)";
+        } else {
+            tabLabels[1] = "Rhythm Mode";
         }
 
         float paddingX = 10;
@@ -314,16 +322,16 @@ public class MyApp extends ImageNotePianoRoll {
         for (int i = 0; i < 2; i++) {
             handTabW[i] = textWidth(handLabels[i]) + paddingX * 2;
         }
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             tabW[i] = textWidth(tabLabels[i]) + paddingX * 2;
         }
 
-        // 画面右上から左に向かって配置: [Right Hand] [Left Hand] | [Learning] [Rhythm] [2-Measure]
+        // 画面右上から左に向かって配置: [Right Hand] [Left Hand] | [Learning] [Rhythm]
         float rightMargin = 20;
         float currentX = width - rightMargin;
 
-        // Mode タブ (右側グループ)
-        for (int i = 2; i >= 0; i--) {
+        // Mode タブ (右側グループ: 1(Rhythm), 0(Learning))
+        for (int i = 1; i >= 0; i--) {
             currentX -= tabW[i];
             tabX[i] = currentX;
             currentX -= spacing;
@@ -332,7 +340,7 @@ public class MyApp extends ImageNotePianoRoll {
         // グループ間の間隔
         currentX -= (groupGap - spacing);
 
-        // Hand タブ (左側グループ)
+        // Hand タブ (左側グループ: 1(Left), 0(Right))
         for (int i = 1; i >= 0; i--) {
             currentX -= handTabW[i];
             handTabX[i] = currentX;
@@ -383,27 +391,26 @@ public class MyApp extends ImageNotePianoRoll {
         }
 
         // === Mode タブの描画 ===
-        for (int i = 0; i < 3; i++) {
-            boolean isActive = false;
+        for (int i = 0; i < 2; i++) {
+            boolean isActive = (i == currentMode);
             int strokeR = 75, strokeG = 90, strokeB = 115;
             int textR = 170, textG = 180, textB = 200;
 
-            if (i == 0 && !rhythmMode && !twoMeasureRepeatMode) {
-                isActive = true;
-                strokeR = 64; strokeG = 156; strokeB = 255; // ネオンブルー
-                textR = 95; textG = 175; textB = 255;
-            } else if (i == 1 && rhythmMode) {
-                isActive = true;
-                strokeR = 255; strokeG = 75; strokeB = 75; // ネオンレッド
-                textR = 255; textG = 95; textB = 95;
-            } else if (i == 2 && twoMeasureRepeatMode) {
-                isActive = true;
+            if (i == 0 && isActive) {
                 if (isDemoTurn) {
                     strokeR = 255; strokeG = 180; strokeB = 50; // ネオンオレンジ（お手本）
                     textR = 255; textG = 190; textB = 70;
                 } else {
                     strokeR = 50; strokeG = 220; strokeB = 120; // ネオングリーン（演奏）
                     textR = 80; textG = 235; textB = 140;
+                }
+            } else if (i == 1 && isActive) {
+                if (isDemoTurn) {
+                    strokeR = 255; strokeG = 180; strokeB = 50; // ネオンオレンジ（お手本）
+                    textR = 255; textG = 190; textB = 70;
+                } else {
+                    strokeR = 180; strokeG = 80; strokeB = 255; // ネオンパープル/バイオレット（Rhythm演奏）
+                    textR = 210; textG = 130; textB = 255;
                 }
             }
 
@@ -445,8 +452,8 @@ public class MyApp extends ImageNotePianoRoll {
             }
         }
 
-        // モードタブのクリック判定
-        for (int i = 0; i < 3; i++) {
+        // モードタブのクリック判定 (0: Learning, 1: Rhythm)
+        for (int i = 0; i < 2; i++) {
             if (mouseX >= tabX[i] && mouseX <= tabX[i] + tabW[i] &&
                 mouseY >= tabY && mouseY <= tabY + tabH) {
                 setAppMode(i);
@@ -600,43 +607,25 @@ public class MyApp extends ImageNotePianoRoll {
         highlightCache.clear();
         setHighlightIndexes(highlightCache);
 
-        if (modeIndex == 0) {
-            // Learning Mode: 消音バージョンのSCCを読み込み、音漏れを完全防止
-            rhythmMode = false;
-            twoMeasureRepeatMode = false;
-            if (musicData != null && musicData.getScc() != null) {
-                cmx.smfread(musicData.getScc());
-            }
-        } else if (modeIndex == 1) {
-            // Rhythm Mode: 消音バージョンのSCCを読み込み、音漏れを完全防止
-            rhythmMode = true;
-            twoMeasureRepeatMode = false;
-            if (musicData != null && musicData.getScc() != null) {
-                cmx.smfread(musicData.getScc());
-            }
-        } else if (modeIndex == 2) {
-            // 2-Measure Repeat Mode: 有音バージョンのSCCを読み込み、最初のお手本から確実に音を再生
-            rhythmMode = false;
-            twoMeasureRepeatMode = true;
-            isDemoTurn = true;
-            currentBlockIndex = 0;
-            if (dataModel != null) {
-                PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
-                int division = dataModelMultiChannel.getScc().getDivision();
-                int beatNum = dataModelMultiChannel.getBeatNum();
-                int twoMeasureTicks = beatNum * division * 2;
-                prepareDemoTurn(0, twoMeasureTicks);
-                if (performanceData != null) {
-                    performanceData.setNotesToPlayForRange(0, twoMeasureTicks);
-                }
+        currentMode = modeIndex;
+        rhythmMode = (modeIndex == 1);
+        twoMeasureRepeatMode = true;
+        isDemoTurn = true;
+        currentBlockIndex = 0;
+
+        if (dataModel != null) {
+            PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
+            int division = dataModelMultiChannel.getScc().getDivision();
+            int beatNum = dataModelMultiChannel.getBeatNum();
+            int twoMeasureTicks = beatNum * division * 2;
+            prepareDemoTurn(0, twoMeasureTicks);
+            if (performanceData != null) {
+                performanceData.setNotesToPlayForRange(0, twoMeasureTicks);
             }
         }
 
         cmx.setTickPosition(0);
         lastTickPosition = 0;
-        if (modeIndex != 2 && performanceData != null) {
-            performanceData.setNotesToPlay();
-        }
         if (rhythmJudge != null) {
             rhythmJudge.reset();
         }
@@ -647,7 +636,7 @@ public class MyApp extends ImageNotePianoRoll {
         super.drawCurrentNote();
 
         // お手本ターン中は、今鳴っているお手本の鍵盤位置を鮮やかなネオンブルーで光らせる
-        if (twoMeasureRepeatMode && isDemoTurn && dataModel != null) {
+        if (isDemoTurn && dataModel != null) {
             long tickPosition = cmx.getTickPosition();
             PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
 
@@ -769,17 +758,60 @@ public class MyApp extends ImageNotePianoRoll {
         public final String midiFile;
         public final String[] pdfFiles;
         public final HandMode hand;
+        public final int beatNum;
+        public final int beatDenom;
 
-        public SongConfig(String name, String midiFile, String[] pdfFiles, HandMode hand) {
+        public SongConfig(String name, String midiFile, String[] pdfFiles, HandMode hand, int beatNum, int beatDenom) {
             this.name = name;
             this.midiFile = midiFile;
             this.pdfFiles = pdfFiles;
             this.hand = hand;
+            this.beatNum = beatNum;
+            this.beatDenom = beatDenom;
+        }
+
+        public SongConfig(String name, String midiFile, String[] pdfFiles, HandMode hand) {
+            int[] ts = detectTimeSignature(midiFile);
+            this.name = name;
+            this.midiFile = midiFile;
+            this.pdfFiles = pdfFiles;
+            this.hand = hand;
+            this.beatNum = ts[0];
+            this.beatDenom = ts[1];
         }
 
         public SongConfig(String name, String midiFile, String[] pdfFiles) {
             this(name, midiFile, pdfFiles, HandMode.RIGHT);
         }
+    }
+
+    /**
+     * MIDIファイルから拍子（分子・分母）を自動検出する
+     */
+    public static int[] detectTimeSignature(String midiResource) {
+        try (var in = MyApp.class.getClassLoader().getResourceAsStream(midiResource)) {
+            if (in != null) {
+                var seq = javax.sound.midi.MidiSystem.getSequence(in);
+                for (var track : seq.getTracks()) {
+                    for (int i = 0; i < track.size(); i++) {
+                        var ev = track.get(i);
+                        if (ev.getMessage() instanceof javax.sound.midi.MetaMessage mm) {
+                            if (mm.getType() == 0x58) {
+                                byte[] d = mm.getData();
+                                int num = d[0] & 0xFF;
+                                int den = 1 << (d[1] & 0xFF);
+                                if (num > 1 && den > 0) {
+                                    return new int[]{num, den};
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // fallback
+        }
+        return new int[]{4, 4};
     }
 
     private static final List<SongConfig> RIGHT_SONGS = List.of(
@@ -792,7 +824,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/kirakira_7to10.pdf",
                 "/kirakira_11to13.pdf"
             },
-            HandMode.RIGHT
+            HandMode.RIGHT,
+            4, 4
         ),
         new SongConfig(
             "練習曲1 (Ex1)",
@@ -804,7 +837,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex1_50to53.pdf", "/ex1_54to57.pdf", "/ex1_58to61.pdf", "/ex1_62to65.pdf",
                 "/ex1_66.pdf", "/ex1_67.pdf", "/ex1_68to71.pdf", "/ex1_72to74.pdf"
             },
-            HandMode.RIGHT
+            HandMode.RIGHT,
+            4, 4
         ),
         new SongConfig(
             "練習曲2 (Ex2)",
@@ -816,7 +850,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex2_48to51.pdf", "/ex2_52to53.pdf", "/ex2_54to57.pdf", "/ex2_58to60.pdf",
                 "/ex2_61to64.pdf", "/ex2_65to68.pdf", "/ex2_69to73.pdf", "/ex2_74.pdf"
             },
-            HandMode.RIGHT
+            HandMode.RIGHT,
+            4, 4
         ),
         new SongConfig(
             "練習曲3 (Ex3)",
@@ -827,7 +862,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex3_27to32.pdf", "/ex3_33to38.pdf", "/ex3_39to44.pdf", "/ex3_45.pdf",
                 "/ex3_46to48.pdf", "/ex3_49to51.pdf", "/ex3_52to57.pdf", "/ex3_58.pdf"
             },
-            HandMode.RIGHT
+            HandMode.RIGHT,
+            3, 4
         ),
         new SongConfig(
             "練習曲4 (Ex4)",
@@ -840,7 +876,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex4_65to70.pdf", "/ex4_71to73.pdf", "/ex4_74to78.pdf", "/ex4_79to80.pdf",
                 "/ex4_81to86.pdf", "/ex4_87to89.pdf", "/ex4_90to94.pdf", "/ex4_95.pdf"
             },
-            HandMode.RIGHT
+            HandMode.RIGHT,
+            3, 4
         ),
         new SongConfig(
             "練習曲5 (Ex5)",
@@ -851,7 +888,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex5_36to40.pdf", "/ex5_41to44.pdf", "/ex5_45to50.pdf", "/ex5_51to56.pdf",
                 "/ex5_57to62.pdf", "/ex5_63to66.pdf", "/ex5_67to74.pdf", "/ex5_75to76.pdf"
             },
-            HandMode.RIGHT
+            HandMode.RIGHT,
+            4, 4
         ),
         new SongConfig(
             "練習曲6 (Ex6)",
@@ -862,7 +900,8 @@ public class MyApp extends ImageNotePianoRoll {
                 "/ex6_24to28.pdf", "/ex6_29to31.pdf", "/ex6_32to36.pdf", "/ex6_37to39.pdf",
                 "/ex6_40to44.pdf", "/ex6_45to50.pdf", "/ex6_51to54.pdf", "/ex6_55to57.pdf"
             },
-            HandMode.RIGHT
+            HandMode.RIGHT,
+            3, 4
         )
     );
 
@@ -871,7 +910,8 @@ public class MyApp extends ImageNotePianoRoll {
             "きらきら星 (Kirakira)",
             "kirakira_L.mid",
             new String[0],
-            HandMode.LEFT
+            HandMode.LEFT,
+            4, 4
         )
     );
 
@@ -908,12 +948,13 @@ public class MyApp extends ImageNotePianoRoll {
         this.currentSongConfig = song;
         this.currentHand = song.hand;
         setHandMode(song.hand);
+        setBeatDenom(song.beatDenom);
 
         musicData = new MusicData(
                 song.midiFile,
                 timeline.getSpan().intValue(),
                 0,
-                4,
+                song.beatNum,
                 48,
                 1,
                 12);
@@ -967,7 +1008,7 @@ public class MyApp extends ImageNotePianoRoll {
         dataModel = new PianoRollDataModelMultiChannel(
                 2,
                 2 + 12,
-                4,
+                song.beatNum,
                 channels,
                 musicData.getScc());
 
@@ -1004,21 +1045,15 @@ public class MyApp extends ImageNotePianoRoll {
         isDemoTurn = true;
         currentBlockIndex = 0;
 
-        if (twoMeasureRepeatMode) {
-            PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
+        twoMeasureRepeatMode = true;
+        PianoRollDataModelMultiChannel dataModelMultiChannel = (PianoRollDataModelMultiChannel) dataModel;
+        if (dataModelMultiChannel != null) {
             int division = dataModelMultiChannel.getScc().getDivision();
             int beatNum = dataModelMultiChannel.getBeatNum();
             int twoMeasureTicks = beatNum * division * 2;
             prepareDemoTurn(0, twoMeasureTicks);
             if (performanceData != null) {
                 performanceData.setNotesToPlayForRange(0, twoMeasureTicks);
-            }
-        } else {
-            if (musicData != null && musicData.getScc() != null) {
-                cmx.smfread(musicData.getScc());
-            }
-            if (performanceData != null) {
-                performanceData.setNotesToPlay();
             }
         }
         

@@ -85,6 +85,15 @@ public class RhythmJudge {
     }
 
     //初期化
+    public void resetForTick(long startTick) {
+        currentIndex = 0;
+        while (currentIndex < scoreNotes.size() && scoreNotes.get(currentIndex).onset() < startTick) {
+            currentIndex++;
+        }
+        lastInputTick = -1;
+        lastScoreTick = -1;
+    }
+
     public void reset() {
         currentIndex = 0;
         lastInputTick = -1;
