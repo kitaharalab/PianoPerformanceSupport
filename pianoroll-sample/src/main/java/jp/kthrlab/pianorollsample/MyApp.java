@@ -21,6 +21,14 @@ import processing.core.PApplet;
 import processing.core.PImage;
 
 public class MyApp extends ImageNotePianoRoll {
+    // ================= 視線計測・実験設定 =================
+    private String experimentSubjectId = "Sub01";           // 被験者ID (例: "Sub01")
+    private String experimentCondition = "PROPOSED";        // 実験条件 ("COMPARISON" または "PROPOSED")
+    private static final boolean USE_MOCK_GAZE = true;      // true: マウスモック, false: Tobii実機
+    private static final boolean SHOW_GAZE_DEBUG = false;   // true: draw() で視線座標に半透明の円を描画
+    private GazeReceiver gazeReceiver;
+    // ====================================================
+
     List<int[]> allSongs = new ArrayList<>();
     int showSong = 1; // 表示する曲番号（デフォルト 1）
     int noteIdx = 0; // 現在のノート位置
@@ -87,6 +95,11 @@ public class MyApp extends ImageNotePianoRoll {
     public void setup() {
         super.setup();
 
+        // 視線受信・ログ記録の開始
+        gazeReceiver = new GazeReceiver(experimentSubjectId, experimentCondition);
+        gazeReceiver.setPhase("PRACTICE");
+        gazeReceiver.start(true, USE_MOCK_GAZE);
+
         cmx.showMidiInChooser(this);
         cmx.showMidiOutChooser(this);
 
@@ -122,6 +135,11 @@ public class MyApp extends ImageNotePianoRoll {
     @Override
     public void draw() {
         super.draw();
+
+        // 毎フレーム視線ログを記録
+        if (gazeReceiver != null) {
+            gazeReceiver.logFrame();
+        }
 
         long tickPosition = cmx.getTickPosition();
 
@@ -295,6 +313,27 @@ public class MyApp extends ImageNotePianoRoll {
 
         // インタラクティブなモード切替タブバーの描画
         drawModeTabs();
+
+        // 視線デバッグ描画 (SHOW_GAZE_DEBUG が true の時のみ)
+        if (SHOW_GAZE_DEBUG && gazeReceiver != null) {
+            drawGazeDebug();
+        }
+    }
+
+    private void drawGazeDebug() {
+        pushStyle();
+        noStroke();
+        float gx = (float) (gazeReceiver.getGazeX() * width);
+        float gy = (float) (gazeReceiver.getGazeY() * height);
+        if (gazeReceiver.isGazeValid()) {
+            fill(255, 0, 0, 120); // 有効: 赤色・半透明
+        } else {
+            fill(128, 128, 128, 120); // トラッキング喪失: グレー・半透明
+        }
+        ellipse(gx, gy, 40, 40);
+        fill(255, 255, 255, 200);
+        ellipse(gx, gy, 6, 6);
+        popStyle();
     }
 
     private void drawModeTabs() {
@@ -526,6 +565,7 @@ public class MyApp extends ImageNotePianoRoll {
                     performanceData, rhythmJudge, this);
 
             receiver = new ReceiverModule(musicData.getScc().toDataSet(), midiRecorder, performanceData);
+            receiver.setGazeReceiver(gazeReceiver);
 
             cmx.addSPModule(mi);
             cmx.addSPModule(receiver);
@@ -941,6 +981,23 @@ public class MyApp extends ImageNotePianoRoll {
         if (key == 'h' || key == 'H') {
             setHand(currentHand == HandMode.RIGHT ? HandMode.LEFT : HandMode.RIGHT);
         }
+
+        if (key == 't' || key == 'T') {
+            if (gazeReceiver != null) {
+                String currentPhase = gazeReceiver.getPhase();
+                String nextPhase = "PRACTICE".equalsIgnoreCase(currentPhase) ? "TEST" : "PRACTICE";
+                gazeReceiver.setPhase(nextPhase);
+                System.out.println("[Gaze] フェーズを切り替えました: " + nextPhase);
+            }
+        }
+    }
+
+    @Override
+    public void exit() {
+        if (gazeReceiver != null) {
+            gazeReceiver.stop();
+        }
+        super.exit();
     }
 
     private void loadSong(SongConfig song) {

@@ -16,6 +16,7 @@ public class ReceiverModule extends SPModule {
     private static MidiRecorder recorder = new MidiRecorder();
     private MidiRecorder midiRecorder;
     private PerformanceData performanceData;
+    private GazeReceiver gazeReceiver;
 
     SCCDataSet sccDataSet;
     private static long currentTickPosition = 0;
@@ -44,6 +45,10 @@ public class ReceiverModule extends SPModule {
         this.performanceData = performanceData;
     }
 
+    public void setGazeReceiver(GazeReceiver gazeReceiver) {
+        this.gazeReceiver = gazeReceiver;
+    }
+
     public void updatePerformanceData(PerformanceData performanceData) {
         this.performanceData = performanceData;
     }
@@ -63,6 +68,10 @@ public class ReceiverModule extends SPModule {
         // MIDI NOTE ON
         if ((msg[0] & 0xF0) == 0x90 && msg[2] > 0) {
             int inputPitch = msg[1];
+            int velocity = msg[2] & 0xFF;
+            if (gazeReceiver != null) {
+                gazeReceiver.logMidiEvent("NOTE_ON", inputPitch, velocity);
+            }
             CurrentInputState.setCurrentNote(inputPitch);
 
             jp.crestmuse.cmx.elements.MutableNote targetNote = null;
@@ -84,6 +93,10 @@ public class ReceiverModule extends SPModule {
         // NOTE OFF
         if ((msg[0] & 0xF0) == 0x80 || ((msg[0] & 0xF0) == 0x90 && msg[2] == 0)) {
             int inputPitch = msg[1];
+            int velocity = msg[2] & 0xFF;
+            if (gazeReceiver != null) {
+                gazeReceiver.logMidiEvent("NOTE_OFF", inputPitch, velocity);
+            }
             if (CurrentInputState.getCurrentNote() == inputPitch) {
                 CurrentInputState.setCurrentNote(-1);
             }
